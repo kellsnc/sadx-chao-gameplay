@@ -22,7 +22,8 @@ void SelectChao() {
 			if (chaodata->entity.CollisionInfo->CollisionArray->origin.y == 2) {
 				for (uint8_t i = 0; i < 24; ++i) {
 					ChaoData * tempdata = (ChaoData *)(GetChaoSaveAddress() + 2072 + (2048 * i));
-					if (tempdata->data.Lifespan == chaodata->ChaoDataBase_ptr->Lifespan
+					if (chaodata->ChaoDataBase_ptr
+						&& tempdata->data.Lifespan == chaodata->ChaoDataBase_ptr->Lifespan
 						&& tempdata->data.DNA.FavoriteFruit1 == chaodata->ChaoDataBase_ptr->DNA.FavoriteFruit1
 						&& tempdata->data.Energy == chaodata->ChaoDataBase_ptr->Energy) {
 						SelectedChao = i + 1;
