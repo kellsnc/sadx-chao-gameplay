@@ -27,6 +27,8 @@ void SelectChao() {
 			ObjectMaster * chao = co2->ObjectHeld;
 			ChaoData1 * chaodata = (ChaoData1 *)chao->Data1;
 
+			if (!chaodata) return;
+
 			if (chaodata->entity.CollisionInfo->CollisionArray->origin.y == 2) {
 				for (uint8_t i = 0; i < 24; ++i) {
 					ChaoData * tempdata = GetChaoData(i);
