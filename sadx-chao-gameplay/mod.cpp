@@ -1,19 +1,56 @@
 #include "stdafx.h"
 #include <vector>
 
-ObjectMaster *ChaoObject;
-ObjectMaster *CurrentChao;
+ObjectMaster* ChaoObject;
+ObjectMaster* CurrentChao;
+CollisionInfo* ChaoCol;
 
-uint8_t SelectedChao = 0;
+uint8_t SelectedChao = 1;
 bool isloaded = false;
 
 std::vector<NJS_PLANE> waterlist = {};
+
+FunctionPointer(int, Chao_Animation, (ObjectMaster *a1, int a2), 0x734F00);
+FunctionPointer(bool, Chao_FinishedAnimation, (ObjectMaster *a1), 0x735040);
+
+//Common functions
+float GetDistance(NJS_VECTOR* orig, NJS_VECTOR* dest) {
+	return sqrtf(powf(dest->x - orig->x, 2) + powf(dest->y - orig->y, 2) + powf(dest->z - orig->z, 2));
+}
+
+NJS_VECTOR GetPointToFollow(NJS_VECTOR* pos, Rotation3* rot) {
+	NJS_VECTOR point;
+
+	NJS_VECTOR dir = { -10, 10, 5 };
+	njPushMatrix(_nj_unit_matrix_);
+	njTranslateV(0, pos);
+	njRotateY(0, -rot->y);
+	njCalcPoint(0, &dir, &point);
+	njPopMatrix(1u);
+	return point;
+}
+
+Rotation3 fPositionToRotation(NJS_VECTOR* orig, NJS_VECTOR* point) {
+	NJS_VECTOR dist;
+	Rotation3 result;
+
+	dist.x = orig->x - point->x;
+	dist.y = orig->y - point->y;
+	dist.z = orig->z - point->z;
+
+	result.x = atan2(dist.y, dist.z) * 65536.0 * -0.1591549762031479;
+	result.y = atan2(dist.x, dist.z) * 65536.0 * 0.1591549762031479;
+
+	result.y = -result.y - 0x4000;
+	return result;
+}
 
 int GetCurrentChaoStage_r() {
 	if (ChaoObject) return 5;
 	else return CurrentChaoStage;
 }
 
+//Chao selection code
 inline ChaoData* GetChaoData(uint8_t id) {
 	return (ChaoData *)(GetChaoSaveAddress() + 2072 + (2048 * id));
 }
@@ -47,6 +84,7 @@ void SelectChao() {
 	}
 }
 
+//Water height calculation
 void GetWaterCollisions() {
 	waterlist.clear();
 	for (int i = 0; i < CurrentLandTable->COLCount; ++i) {
@@ -64,9 +102,9 @@ void GetWaterCollisions() {
 	}
 }
 
-void IsChaoInWater(ObjectMaster * a1) {
-	ChaoData1 * chaodata1 = (ChaoData1*)a1->Data1;
-	ChaoData2 * chaodata2 = (ChaoData2*)a1->Data2;
+void IsChaoInWater(ObjectMaster* a1) {
+	ChaoData1* chaodata1 = (ChaoData1*)a1->Data1;
+	ChaoData2* chaodata2 = (ChaoData2*)a1->Data2;
 
 	float height = -10000000;
 	if (waterlist.size() > 0) {
@@ -75,8 +113,8 @@ void IsChaoInWater(ObjectMaster * a1) {
 		for (int i = 0; i < waterlist.size(); ++i) {
 			wpos = waterlist[i];
 			if (pos.y < wpos.py + 2 && pos.y > wpos.py - 170) {
-				if (pos.x > wpos.px && pos.x < wpos.vx) {
-					if (pos.z > wpos.pz && pos.z < wpos.vz) {
+				if (pos.x > wpos.px&& pos.x < wpos.vx) {
+					if (pos.z > wpos.pz&& pos.z < wpos.vz) {
 						height = wpos.py;
 					}
 				}
@@ -87,6 +125,7 @@ void IsChaoInWater(ObjectMaster * a1) {
 	WriteData((float*)0x73C24C, height);
 }
 
+//Custom Chao Actions
 void ChaoObj_Delete(ObjectMaster * a1) {
 	DeleteObjectMaster(ChaoManager);
 	ChaoManager = nullptr;
@@ -125,7 +164,7 @@ void ChaoObj_Main(ObjectMaster * a1) {
 			LoadChaoPVPs();
 			isloaded = true;
 		}
-
+		
 		ChaoManager_Load(); //Load chao behaviour
 		GetWaterCollisions(); //Hacky solution to make chao swim
 
@@ -149,6 +188,8 @@ void ChaoObj_Main(ObjectMaster * a1) {
 		a1->Data1->Action = 2;
 	}
 	else {
+		ChaoData1* chaodata1 = (ChaoData1*)CurrentChao->Data1;
+
 		//If the act has changed, check water collisions again
 		if (ActCopy != CurrentAct) {
 			GetWaterCollisions();
@@ -162,7 +203,61 @@ void ChaoObj_Main(ObjectMaster * a1) {
 			}
 		}
 
-		IsChaoInWater(CurrentChao);
+		//flight mode
+		if (Action == 3) {
+			EntityData1* data1 = EntityData1Ptrs[a1->Data1->CharID];
+			if (PressedButtons[a1->Data1->CharID] & Buttons_D) {
+				a1->Data1->Action = 4;
+			}
+
+			chaodata1->entity.Position = GetPointToFollow(&data1->Position, &data1->Rotation);
+			chaodata1->entity.Rotation.y = -fPositionToRotation(&chaodata1->entity.Position, &data1->Position).y + 0x4000;
+			if (FrameCounterUnpaused % 30 == 0) {
+				Chao_Animation(CurrentChao, 289);
+			}
+		}
+		else if (Action == 4) {
+			if (++a1->Data1->InvulnerableTime > 60) {
+				CurrentChao->Data1->CharIndex = 0;
+				a1->Data1->InvulnerableTime = 0;
+				a1->Data1->Action = 2;
+			}
+		}
+		else {
+			for (uint8_t player = 0; player < 8; ++player) {
+				EntityData1* data1 = EntityData1Ptrs[player];
+				if (!data1) continue;
+
+				if (PressedButtons[player] & Buttons_D &&
+					GetDistance(&data1->Position, &chaodata1->entity.Position) < 50) {
+					CurrentChao->Data1->CharIndex = 1;
+					a1->Data1->Action = 3;
+					a1->Data1->CharID = player;
+				}
+			}
+		}
+	}
+}
+
+//Different water height for multiple chao
+void Chao_Main_r(ObjectMaster* obj);
+Trampoline Chao_Main_t((int)Chao_Main, (int)Chao_Main + 0x6, Chao_Main_r);
+void Chao_Main_r(ObjectMaster* obj) {
+	if (CurrentLevel < 39) {
+		IsChaoInWater(obj);
+	}
+
+	ObjectFunc(original, Chao_Main_t.Target());
+	original(obj);
+}
+
+//Skip gravity calculations if following player
+void Chao_Gravity_r(ObjectMaster* obj);
+Trampoline Chao_Gravity_t(0x73FEF0, 0x73FEF8, Chao_Gravity_r);
+void Chao_Gravity_r(ObjectMaster* obj) {
+	if (CurrentLevel > 38 || CurrentChao->Data1->CharIndex != 1) {
+		ObjectFunc(original, Chao_Gravity_t.Target());
+		original(obj);
 	}
 }
 

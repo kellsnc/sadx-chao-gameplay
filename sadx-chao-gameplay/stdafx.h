@@ -7,3 +7,4 @@
 
 #include <SADXModLoader.h>
 #include <IniFile.hpp>
+#include <Trampoline.h>
