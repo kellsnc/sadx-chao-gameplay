@@ -125,6 +125,15 @@ void IsChaoInWater(ObjectMaster* a1) {
 	WriteData((float*)0x73C24C, height);
 }
 
+NJS_VECTOR GetPathPosition(NJS_VECTOR* orig, NJS_VECTOR* dest, float state) {
+	NJS_VECTOR result;
+	result.x = (dest->x - orig->x) * state + orig->x;
+	result.y = (dest->y - orig->y) * state + orig->y;
+	result.z = (dest->z - orig->z) * state + orig->z;
+
+	return result;
+}
+
 //Custom Chao Actions
 void ChaoObj_Delete(ObjectMaster * a1) {
 	DeleteObjectMaster(ChaoManager);
@@ -210,8 +219,35 @@ void ChaoObj_Main(ObjectMaster * a1) {
 				a1->Data1->Action = 4;
 			}
 
-			chaodata1->entity.Position = GetPointToFollow(&data1->Position, &data1->Rotation);
-			chaodata1->entity.Rotation.y = -fPositionToRotation(&chaodata1->entity.Position, &data1->Position).y + 0x4000;
+			EntityData1* data = a1->Data1;
+			
+			data->Position = GetPointToFollow(&data1->Position, &data1->Rotation);
+			float dist = GetDistance(&data->Position, &chaodata1->entity.Position);
+
+			//adjust flight speed with the fly level of the chao
+			if (dist > 1000) chaodata1->entity.Position = data->Position;
+			float speedbonus = min(chaodata1->ChaoDataBase_ptr->FlyLevel, 99) / 2;
+			dist += speedbonus;
+
+			chaodata1->ChaoDataBase_ptr->FlyLevel;
+			if (dist < 5) {
+				chaodata1->entity.Position = GetPathPosition(&chaodata1->entity.Position, &data->Position, dist / (100 + (400 - dist)));
+				chaodata1->entity.Rotation.y = -data1->Rotation.y + 0x4000;
+
+				if (GetDistance(&data->Position, &chaodata1->entity.Position) < 1) {
+					chaodata1->entity.Position = data->Position;
+					chaodata1->entity.Action = 1;
+				}
+			}
+			else if (dist < 30) {
+				chaodata1->entity.Position = GetPathPosition(&chaodata1->entity.Position, &data->Position, dist / 400);
+				chaodata1->entity.Rotation.y = -fPositionToRotation(&chaodata1->entity.Position, &data->Position).y + 0x4000;
+			}
+			else {
+				chaodata1->entity.Position = GetPathPosition(&chaodata1->entity.Position, &data->Position, dist / 300);
+				chaodata1->entity.Rotation.y = -fPositionToRotation(&chaodata1->entity.Position, &data->Position).y + 0x4000;
+			}
+
 			if (FrameCounterUnpaused % 30 == 0) {
 				Chao_Animation(CurrentChao, 289);
 			}
