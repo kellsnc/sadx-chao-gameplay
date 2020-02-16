@@ -105,7 +105,9 @@ void SelectChao() {
 		}
 	}
 	else {
-		if (GameState == 15) SelectedChao = 0;
+		if (!ChaoObject || ChaoObject->Data1->Action != ChaoAction_Flight) {
+			if (GameState == 15) SelectedChao = 0;
+		}
 	}
 }
 
@@ -294,11 +296,15 @@ void ChaoObj_Main(ObjectMaster * a1) {
 
 		//Load the chao
 		CurrentChao = CreateChao(chaodata, 0, CurrentChao, &v, 0);
-		if (EntityData1Ptrs[0]->Action != 12) SetHeldObject(0, CurrentChao);
-
-		CurrentChao->Data1->CharIndex = 1;
-		data->Action = ChaoAction_Flight;
-		data->CharID = 0;
+		if (EntityData1Ptrs[0]->Action != 12 && CurrentLevel >= LevelIDs_StationSquare && CurrentLevel <= LevelIDs_Past) {
+			SetHeldObject(0, CurrentChao);
+			data->Action = ChaoAction_Free;
+		}
+		else {
+			CurrentChao->Data1->CharIndex = 1;
+			data->Action = ChaoAction_Flight;
+			data->CharID = 0;
+		}
 	}
 	else {
 		ChaoData1* chaodata1 = (ChaoData1*)CurrentChao->Data1;
