@@ -5,13 +5,25 @@ ObjectMaster* ChaoObject;
 ObjectMaster* CurrentChao;
 CollisionInfo* ChaoCol;
 
-uint8_t SelectedChao = 1;
+uint8_t SelectedChao = 0;
 bool isloaded = false;
 
 std::vector<NJS_PLANE> waterlist = {};
 
+NJS_VECTOR bombpos;
+float bombsize;
+
 FunctionPointer(int, Chao_Animation, (ObjectMaster *a1, int a2), 0x734F00);
 FunctionPointer(bool, Chao_FinishedAnimation, (ObjectMaster *a1), 0x735040);
+FunctionPointer(EntityData1*, SpawnAnimal, (int unknown, float x, float y, float z), 0x4BE610);
+
+enum ChaoActions {
+	ChaoAction_Init,
+	ChaoAction_LoadChao,
+	ChaoAction_Free,
+	ChaoAction_Flight,
+	ChaoAction_Attack
+};
 
 //Common functions
 float GetDistance(NJS_VECTOR* orig, NJS_VECTOR* dest) {
@@ -45,12 +57,25 @@ Rotation3 fPositionToRotation(NJS_VECTOR* orig, NJS_VECTOR* point) {
 	return result;
 }
 
+NJS_VECTOR GetPathPosition(NJS_VECTOR* orig, NJS_VECTOR* dest, float state) {
+	NJS_VECTOR result;
+	result.x = (dest->x - orig->x) * state + orig->x;
+	result.y = (dest->y - orig->y) * state + orig->y;
+	result.z = (dest->z - orig->z) * state + orig->z;
+
+	return result;
+}
+
+bool IsPointInsideSphere(NJS_VECTOR* center, NJS_VECTOR* pos, float radius) {
+	return (powf(pos->x - center->x, 2) + pow(pos->y - center->y, 2) + pow(pos->z - center->z, 2)) <= pow(radius, 2);
+}
+
 int GetCurrentChaoStage_r() {
 	if (ChaoObject) return 5;
 	else return CurrentChaoStage;
 }
 
-//Chao selection code
+//Chao selection functions
 inline ChaoData* GetChaoData(uint8_t id) {
 	return (ChaoData *)(GetChaoSaveAddress() + 2072 + (2048 * id));
 }
@@ -125,13 +150,89 @@ void IsChaoInWater(ObjectMaster* a1) {
 	WriteData((float*)0x73C24C, height);
 }
 
-NJS_VECTOR GetPathPosition(NJS_VECTOR* orig, NJS_VECTOR* dest, float state) {
-	NJS_VECTOR result;
-	result.x = (dest->x - orig->x) * state + orig->x;
-	result.y = (dest->y - orig->y) * state + orig->y;
-	result.z = (dest->z - orig->z) * state + orig->z;
+//Enemy attack functions
+ObjectMaster* Chao_GetClosestEnemy(NJS_VECTOR* pos, float stamina) {
+	ObjectMaster* current = ObjectListThing[3];
+	while (1) {
+		if (current->MainSub == Kiki_Main || current->MainSub == RhinoTank_Main || current->MainSub == Sweep_Main
+			|| current->MainSub == SpinnerA_Main || current->MainSub == SpinnerB_Main || current->MainSub == SpinnerC_Main
+			|| current->MainSub == UnidusA_Main || current->MainSub == UnidusB_Main || current->MainSub == UnidusC_Main
+			|| current->MainSub == Leon_Main || current->MainSub == BoaBoa_Main || current->MainSub == ESman) {
+			
+			float dist = GetDistance(pos, &current->Data1->Position);
+			if (GetDistance(pos, &current->Data1->Position) < 200 + stamina) return current;
+			else {
+				if (current->Next) {
+					current = current->Next;
+					continue;
+				}
+				else break;
+			}
+		}
+		else {
+			if (current->Next) current = current->Next;
+			else break;
+		}
+	}
+	return nullptr;
+}
 
-	return result;
+bool Chao_CheckEnemy(ChaoData1* chaodata) {
+	if (Chao_GetClosestEnemy(&chaodata->entity.Position, chaodata->ChaoDataBase_ptr->StaminaLevel)) {
+		if (rand() % (1000 / max(1, min(chaodata->ChaoDataBase_ptr->PowerLevel, 99))) == 0) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool OhNoImDead2(EntityData1* a1, ObjectData2* a2);
+Trampoline OhNoImDead2_t(0x004CE030, 0x004CE036, OhNoImDead2);
+bool OhNoImDead2(EntityData1* a1, ObjectData2* a2) {
+	if (a1->CollisionInfo->CollidingObject) {
+		if (a1->CollisionInfo->CollidingObject->Object->MainSub == Chao_Main
+			&& a1->CollisionInfo->CollidingObject->Object->Data1->Action == ChaoAction_Attack) return 1;
+	}
+
+	if (bombsize && GetDistance(&bombpos, &a1->Position) < bombsize) {
+		bombsize = 0;
+		return 1;
+	}
+	
+	FunctionPointer(bool, original, (EntityData1 * a1, ObjectData2 * a2), OhNoImDead2_t.Target());
+	return original(a1, a2);
+}
+
+//Extra animals if the Chao is lucky
+void Chao_CheckLuck(ChaoData1* chaodata) {
+	if (chaodata->ChaoDataBase_ptr->LuckyGrade > 0) {
+		if (rand() % (101 - (min(chaodata->ChaoDataBase_ptr->LuckLevel, 99))) == 0) {
+			SpawnAnimal(2, chaodata->entity.Position.x, chaodata->entity.Position.y, chaodata->entity.Position.z);
+
+			int grade = 2;
+			while (1) {
+				if (chaodata->ChaoDataBase_ptr->LuckyGrade >= grade) {
+					if (rand() % grade == 0) {
+						SpawnAnimal(2, chaodata->entity.Position.x, chaodata->entity.Position.y, chaodata->entity.Position.z);
+						grade += 1;
+						continue;
+					}
+					else {
+						break;
+					}
+				}
+				else {
+					break;
+				}
+			}
+		}
+	}
+}
+
+// Flight functions
+inline float Chao_GetFlightSpeed(ChaoDataBase* chaodatabase) {
+	return min(chaodatabase->FlyLevel, 99) / 2;
 }
 
 //Custom Chao Actions
@@ -153,8 +254,9 @@ void ChaoObj_Delete(ObjectMaster * a1) {
 
 void ChaoObj_Main(ObjectMaster * a1) {
 	uint8_t Action = a1->Data1->Action;
-	
-	if (Action == 0) {
+	EntityData1* data = a1->Data1;
+
+	if (Action == ChaoAction_Init) {
 		//We wait a bit before loading chao stuff
 		if (!CurrentLandTable) return;
 
@@ -180,9 +282,9 @@ void ChaoObj_Main(ObjectMaster * a1) {
 		ActCopy = CurrentAct;
 
 		a1->DeleteSub = ChaoObj_Delete; //When you quit a level
-		a1->Data1->Action = 1; //Wait a frame before loading a chao
+		data->Action = ChaoAction_LoadChao; //Wait a frame before loading a chao
 	}
-	else if (Action == 1) {
+	else if (Action == ChaoAction_LoadChao) {
 		//We get the chao data in the savefile
 		ChaoData* chaodata = GetChaoData(SelectedChao - 1);
 
@@ -194,7 +296,9 @@ void ChaoObj_Main(ObjectMaster * a1) {
 		CurrentChao = CreateChao(chaodata, 0, CurrentChao, &v, 0);
 		if (EntityData1Ptrs[0]->Action != 12) SetHeldObject(0, CurrentChao);
 
-		a1->Data1->Action = 2;
+		CurrentChao->Data1->CharIndex = 1;
+		data->Action = ChaoAction_Flight;
+		data->CharID = 0;
 	}
 	else {
 		ChaoData1* chaodata1 = (ChaoData1*)CurrentChao->Data1;
@@ -207,56 +311,130 @@ void ChaoObj_Main(ObjectMaster * a1) {
 			//Fix a bug at Emerald Coast act swap by reloading the chao
 			if (CurrentLevel == LevelIDs_EmeraldCoast && CurrentAct == 1) {
 				a1->DeleteSub(a1);
-				a1->Data1->Action = 0;
+				data->Action = ChaoAction_Init;
 				return;
 			}
 		}
 
 		//flight mode
-		if (Action == 3) {
-			EntityData1* data1 = EntityData1Ptrs[a1->Data1->CharID];
-			if (PressedButtons[a1->Data1->CharID] & Buttons_D) {
-				a1->Data1->Action = 4;
-			}
+		if (Action == ChaoAction_Flight) {
+			if (data->NextAction == 0) {
+				if (PressedButtons[data->CharID] & Buttons_D) {
+					CurrentChao->Data1->CharIndex = 0;
+					data->InvulnerableTime = 0;
+					data->NextAction = 1;
+					return;
+				}
 
-			EntityData1* data = a1->Data1;
-			
-			data->Position = GetPointToFollow(&data1->Position, &data1->Rotation);
-			float dist = GetDistance(&data->Position, &chaodata1->entity.Position);
+				if (chaodata1->ChaoDataBase_ptr->PowerLevel > 5 && chaodata1->ChaoDataBase_ptr->Energy > 1000 && Chao_CheckEnemy(chaodata1)) {
+					data->Action = ChaoAction_Attack;
+					data->NextAction = 0;
+					return;
+				}
 
-			//adjust flight speed with the fly level of the chao
-			if (dist > 1000) chaodata1->entity.Position = data->Position;
-			float speedbonus = min(chaodata1->ChaoDataBase_ptr->FlyLevel, 99) / 2;
-			dist += speedbonus;
+				EntityData1* data1 = EntityData1Ptrs[data->CharID];
 
-			chaodata1->ChaoDataBase_ptr->FlyLevel;
-			if (dist < 5) {
-				chaodata1->entity.Position = GetPathPosition(&chaodata1->entity.Position, &data->Position, dist / (100 + (400 - dist)));
-				chaodata1->entity.Rotation.y = -data1->Rotation.y + 0x4000;
+				data->Position = GetPointToFollow(&data1->Position, &data1->Rotation);
+				float dist = GetDistance(&data->Position, &chaodata1->entity.Position);
 
-				if (GetDistance(&data->Position, &chaodata1->entity.Position) < 1) {
-					chaodata1->entity.Position = data->Position;
-					chaodata1->entity.Action = 1;
+				//adjust flight speed with the fly level of the chao
+				if (dist > 1000) chaodata1->entity.Position = data->Position;
+				dist += Chao_GetFlightSpeed(chaodata1->ChaoDataBase_ptr);
+
+				if (dist < 5) {
+					chaodata1->entity.Position = GetPathPosition(&chaodata1->entity.Position, &data->Position, dist / (100 + (400 - dist)));
+					chaodata1->entity.Rotation.y = -data1->Rotation.y + 0x4000;
+
+					if (GetDistance(&data->Position, &chaodata1->entity.Position) < 1) {
+						chaodata1->entity.Position = data->Position;
+						chaodata1->entity.Action = 1;
+					}
+				}
+				else if (dist < 30) {
+					chaodata1->entity.Position = GetPathPosition(&chaodata1->entity.Position, &data->Position, dist / 400);
+					chaodata1->entity.Rotation.y = -fPositionToRotation(&chaodata1->entity.Position, &data->Position).y + 0x4000;
+				}
+				else {
+					chaodata1->entity.Position = GetPathPosition(&chaodata1->entity.Position, &data->Position, dist / 300);
+					chaodata1->entity.Rotation.y = -fPositionToRotation(&chaodata1->entity.Position, &data->Position).y + 0x4000;
+				}
+
+				if (FrameCounterUnpaused % 30 == 0) {
+					Chao_Animation(CurrentChao, 289);
 				}
 			}
-			else if (dist < 30) {
-				chaodata1->entity.Position = GetPathPosition(&chaodata1->entity.Position, &data->Position, dist / 400);
-				chaodata1->entity.Rotation.y = -fPositionToRotation(&chaodata1->entity.Position, &data->Position).y + 0x4000;
+			else if (data->NextAction == 1) {
+				if (++data->InvulnerableTime > 60) {
+					data->Action = ChaoAction_Free;
+				}
+			}
+		}
+		else if (Action == ChaoAction_Attack) {
+			uint8_t stamina = chaodata1->ChaoDataBase_ptr->StaminaLevel;
+
+			if (data->NextAction == 0) {
+				ObjectMaster* enemy = Chao_GetClosestEnemy(&chaodata1->entity.Position, stamina);
+				if (enemy) {
+					data->LoopData = (Loop*)enemy;
+					data->NextAction = 1;
+				}
+				else {
+					data->NextAction = 0;
+					data->Action = ChaoAction_Flight;
+				}
+
 			}
 			else {
-				chaodata1->entity.Position = GetPathPosition(&chaodata1->entity.Position, &data->Position, dist / 300);
-				chaodata1->entity.Rotation.y = -fPositionToRotation(&chaodata1->entity.Position, &data->Position).y + 0x4000;
+				if (data->LoopData) {
+					ObjectMaster* enemy = (ObjectMaster*)data->LoopData;
+					
+					if (!enemy->Data1) {
+						data->NextAction = 0;
+						data->LoopData = nullptr;
+
+						Chao_CheckLuck(chaodata1);
+
+						if (chaodata1->ChaoDataBase_ptr->PowerGrade > 2) {
+							if (rand() % 3 == 0) {
+								stamina -= 10;
+								data->Action = ChaoAction_Attack;
+								return;
+							}
+						}
+
+						data->Action = ChaoAction_Flight;
+						return;
+					}
+
+					if (IsPointInsideSphere(&enemy->Data1->Position, &chaodata1->entity.Position, 15)) {
+						bombpos = enemy->Data1->Position;
+						bombsize = 5;
+
+						if (++data->InvulnerableTime > 120) {
+							data->LoopData = nullptr;
+							DeleteObject_(enemy);
+							return;
+						}
+					}
+
+					data->Position = enemy->Data1->Position;
+					float dist = GetDistance(&data->Position, &chaodata1->entity.Position);
+					float speed = Chao_GetFlightSpeed(chaodata1->ChaoDataBase_ptr);
+
+					dist += speed;
+					dist = fmax(fmin(dist, 200), 80 + speed);
+					
+					chaodata1->entity.Position = GetPathPosition(&chaodata1->entity.Position, &data->Position, dist / 3000);
+					chaodata1->entity.Rotation.y = -fPositionToRotation(&chaodata1->entity.Position, &data->Position).y + 0x4000;
+				}
+				else {
+					data->NextAction = 0;
+					data->Action = ChaoAction_Flight;
+				}
 			}
 
 			if (FrameCounterUnpaused % 30 == 0) {
 				Chao_Animation(CurrentChao, 289);
-			}
-		}
-		else if (Action == 4) {
-			if (++a1->Data1->InvulnerableTime > 60) {
-				CurrentChao->Data1->CharIndex = 0;
-				a1->Data1->InvulnerableTime = 0;
-				a1->Data1->Action = 2;
 			}
 		}
 		else {
@@ -267,8 +445,9 @@ void ChaoObj_Main(ObjectMaster * a1) {
 				if (PressedButtons[player] & Buttons_D &&
 					GetDistance(&data1->Position, &chaodata1->entity.Position) < 50) {
 					CurrentChao->Data1->CharIndex = 1;
-					a1->Data1->Action = 3;
-					a1->Data1->CharID = player;
+					data->Action = ChaoAction_Flight;
+					data->NextAction = 0;
+					data->CharID = player;
 				}
 			}
 		}
