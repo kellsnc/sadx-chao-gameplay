@@ -33,16 +33,16 @@ void SelectChao(char player) {
 
 	if (!co2) return;
 
-	if (co2->ObjectHeld != nullptr) {
+	if (ChaoMaster.ChaoHandles[player].Chao &&
+		ChaoMaster.ChaoHandles[player].Handle->Data1->Action == ChaoAction_Flight) {
+		ChaoMaster.ChaoHandles[player].SelectedChao = GetChaoByPointer(ChaoMaster.ChaoHandles[player].Chao);
+		ChaoMaster.ChaoHandles[player].Carried = false;
+	}
+	else if (co2->ObjectHeld != nullptr) {
 		if (ChaoMaster.ChaoHandles[player].SelectedChao == NULL) {
 			ChaoMaster.ChaoHandles[player].SelectedChao = GetChaoByPointer(co2->ObjectHeld);
 			ChaoMaster.ChaoHandles[player].Carried = true;
 		}
-	}
-	else if (ChaoMaster.ChaoHandles[player].Chao && 
-		ChaoMaster.ChaoHandles[player].Chao->Data1->Action == ChaoAction_Flight) {
-		ChaoMaster.ChaoHandles[player].SelectedChao = GetChaoByPointer(ChaoMaster.ChaoHandles[player].Chao);
-		ChaoMaster.ChaoHandles[player].Carried = true;
 	}
 	else {
 		ChaoMaster.ChaoHandles[player].SelectedChao = NULL;
@@ -112,18 +112,29 @@ extern "C"
 					SelectChao(p);
 				}
 			}
+
+			return;
 		}
 
+		//Tell the system we can reload Chao
 		if (GameState != 4 && GameState != 15 && GameState != 16) {
 			ChaoMaster.ChaoLoaded = false;
+
+			if (GameMode == GameModes_Menu) {
+				for (char p = 0; p < 8; ++p) {
+					ChaoMaster.ChaoHandles[p].SelectedChao = 0;
+				}
+			}
+
+			return;
 		}
-		
+
 		//Load Chao at the beginning of levels or fields
 		if ((GameState == 4 || GameState == 2) && !IsLevelChaoGarden() && ChaoMaster.ChaoLoaded == false) {
 			for (char p = 0; p < 8; ++p) {
 
-				if (p == 0) ChaoMaster.ChaoHandles[p].SelectedChao = 1;
-				if (p == 1) ChaoMaster.ChaoHandles[p].SelectedChao = 2;
+				/*if (p == 0) ChaoMaster.ChaoHandles[p].SelectedChao = 1;
+				if (p == 1) ChaoMaster.ChaoHandles[p].SelectedChao = 2;*/
 
 				if (ChaoMaster.ChaoHandles[p].Handle) {
 					continue;
