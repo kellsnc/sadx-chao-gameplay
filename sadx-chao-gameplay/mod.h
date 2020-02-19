@@ -27,6 +27,12 @@ FunctionPointer(EntityData1*, SpawnAnimal, (int unknown, float x, float y, float
 FunctionPointer(int, WhistleFunction, (EntityData1* a1, EntityData2* a2, CharObj2* a3, int flag), 0x442570);
 FunctionPointer(int, BigWhistle, (int a3, int a4, int a5, int a6), 0x423BE0);
 
+extern ChaoHandle ChaoMaster;
+ChaoData* GetChaoData(uint8_t id);
+void KillEnemiesInSphere(NJS_VECTOR* pos, float radius);
+
+void ChaoObj_Main(ObjectMaster* obj);
+
 float GetDistance(NJS_VECTOR* orig, NJS_VECTOR* dest);
 NJS_VECTOR GetPointToFollow(NJS_VECTOR* pos, Rotation3* rot);
 Rotation3 fPositionToRotation(NJS_VECTOR* orig, NJS_VECTOR* point);
@@ -35,7 +41,7 @@ bool IsPointInsideSphere(NJS_VECTOR* center, NJS_VECTOR* pos, float radius);
 bool IsPlayerHoldingObject(char player);
 
 void GetWaterCollisions();
-void IsChaoInWater(ObjectMaster* a1);
+void IsChaoInWater(ObjectMaster* obj);
 
 //from https://github.com/nihilus/hexrays_tools/blob/master/code/defs.h
 #define _BYTE  uint8_t

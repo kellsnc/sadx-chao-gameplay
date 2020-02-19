@@ -80,6 +80,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="chao.cpp" />
     <ClCompile Include="general.cpp" />
     <ClCompile Include="mod.cpp" />
     <ClCompile Include="stdafx.cpp">

@@ -20,9 +20,9 @@ void GetWaterCollisions() {
 	}
 }
 
-void IsChaoInWater(ObjectMaster* a1) {
-	ChaoData1* chaodata1 = (ChaoData1*)a1->Data1;
-	ChaoData2* chaodata2 = (ChaoData2*)a1->Data2;
+void IsChaoInWater(ObjectMaster* obj) {
+	ChaoData1* chaodata1 = (ChaoData1*)obj->Data1;
+	ChaoData2* chaodata2 = (ChaoData2*)obj->Data2;
 
 	float height = -10000000;
 	if (waterlist.size() > 0) {
