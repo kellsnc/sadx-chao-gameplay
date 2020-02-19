@@ -44,3 +44,12 @@ NJS_VECTOR GetPathPosition(NJS_VECTOR* orig, NJS_VECTOR* dest, float state) {
 bool IsPointInsideSphere(NJS_VECTOR* center, NJS_VECTOR* pos, float radius) {
 	return (powf(pos->x - center->x, 2) + pow(pos->y - center->y, 2) + pow(pos->z - center->z, 2)) <= pow(radius, 2);
 }
+
+bool IsPlayerHoldingObject(char player) {
+	EntityData1* data = EntityData1Ptrs[player];
+	if ((data->CharID == Characters_Big || data->CharID == Characters_Gamma) && data->Action == 17) return true;
+	if ((data->CharID == Characters_Sonic || data->CharID == Characters_Tails) && data->Action == 23) return true;
+	if (data->CharID == Characters_Amy && data->Action == 25) return true;
+	if (data->CharID == Characters_Knuckles && data->Action == 29) return true;
+	return false;
+}

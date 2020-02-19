@@ -41,13 +41,13 @@ void SelectChao(char player) {
 	if (co2->ObjectHeld != nullptr) {
 		if (ChaoMaster.ChaoHandles[player].SelectedChao == NULL) {
 			ChaoMaster.ChaoHandles[player].SelectedChao = GetChaoByPointer(co2->ObjectHeld);
-			ChaoMaster.PreviousLevel = CurrentLevel;
+			ChaoMaster.ChaoHandles[player].Carried = true;
 		}
 	}
 	else if (ChaoMaster.ChaoHandles[player].Chao && 
 		ChaoMaster.ChaoHandles[player].Chao->Data1->Action == ChaoAction_Flight) {
 		ChaoMaster.ChaoHandles[player].SelectedChao = GetChaoByPointer(ChaoMaster.ChaoHandles[player].Chao);
-		ChaoMaster.PreviousLevel = CurrentLevel;
+		ChaoMaster.ChaoHandles[player].Carried = true;
 	}
 	else {
 		ChaoMaster.ChaoHandles[player].SelectedChao = NULL;
@@ -139,6 +139,24 @@ inline float Chao_GetFlightSpeed(ChaoDataBase* chaodatabase) {
 	return min(chaodatabase->FlyLevel, 99) / 2;
 }
 
+//Whistle function
+void PerformWhistle(char id) {
+	EntityData1* data1 = EntityData1Ptrs[id];
+	int flag = 0;
+
+	switch (data1->CharID) {
+	case Characters_Sonic: flag = 0x854A01;  PlaySound(775, 0, 0, 0); break;
+	case Characters_Tails: flag = 8864257; PlaySound(776, 0, 0, 0); break;
+	case Characters_Knuckles: flag = 7485441; PlaySound(794, 0, 0, 0); break;
+	case Characters_Amy: flag = 5518337; PlaySound(820, 0, 0, 0); break;
+	case Characters_Gamma: flag = 5913089; BigWhistle(1, 93, 0, 31); break;
+	case Characters_Big: flag = 6829569; PlaySound(856, 0, 0, 0); break;
+	}
+
+	EntityData1Ptrs[id]->Action = BYTE1(flag);
+	CharObj2Ptrs[id]->AnimationThing.Index = HIWORD(flag);
+}
+
 //Custom Chao Actions
 void ChaoObj_Delete(ObjectMaster * obj) {
 	DeleteObjectMaster(ChaoManager);
@@ -199,8 +217,8 @@ void ChaoObj_Main(ObjectMaster * a1) {
 
 		//Load the chao
 		Leash->Chao = CreateChao(chaodata, 0, Leash->Chao, &v, 0);
-		if (EntityData1Ptrs[0]->Action != 12 && CurrentLevel >= LevelIDs_StationSquare && CurrentLevel <= LevelIDs_Past) {
-			SetHeldObject(0, Leash->Chao);
+		if (Leash->Carried == true) {
+			SetHeldObject(data->CharIndex, Leash->Chao);
 			data->Action = ChaoAction_Free;
 		}
 		else {
@@ -211,6 +229,17 @@ void ChaoObj_Main(ObjectMaster * a1) {
 	}
 	else {
 		ChaoData1* chaodata1 = (ChaoData1*)Leash->Chao->Data1;
+
+		if (!EntityData1Ptrs[data->CharIndex]) {
+			DeleteObject_(a1);
+		}
+
+		if (IsPlayerHoldingObject(data->CharIndex)) {
+			Leash->Carried = true;
+		}
+		else {
+			Leash->Carried = false;
+		}
 
 		//If the act has changed, check water collisions again
 		if (ActCopy != CurrentAct) {
@@ -228,7 +257,7 @@ void ChaoObj_Main(ObjectMaster * a1) {
 		//flight mode
 		if (Action == ChaoAction_Flight) {
 			if (data->NextAction == 0) {
-				if (PressedButtons[data->CharID] & Buttons_D) {
+				if (PressedButtons[data->CharIndex] & Buttons_C) {
 					Leash->Chao->Data1->CharIndex = 0;
 					data->InvulnerableTime = 0;
 					data->NextAction = 1;
@@ -346,18 +375,19 @@ void ChaoObj_Main(ObjectMaster * a1) {
 				Chao_Animation(Leash->Chao, 289);
 			}
 		}
-		else {
-			for (uint8_t player = 0; player < 8; ++player) {
-				EntityData1* data1 = EntityData1Ptrs[player];
-				if (!data1) continue;
+		else if (Leash->Carried == false) {
+			EntityData1* data1 = EntityData1Ptrs[data->CharIndex];
+			
+			if (PressedButtons[data->CharIndex] & Buttons_C) {
+				PerformWhistle(data->CharIndex);
+				
+				Leash->Chao->Data1->CharIndex = 1;
+				data->Action = ChaoAction_Flight;
+				data->NextAction = 0;
+			}
 
-				if (PressedButtons[player] & Buttons_D &&
-					GetDistance(&data1->Position, &chaodata1->entity.Position) < 50) {
-					Leash->Chao->Data1->CharIndex = 1;
-					data->Action = ChaoAction_Flight;
-					data->NextAction = 0;
-					data->CharID = player;
-				}
+			if (PressedButtons[data->CharIndex] & Buttons_Y) {
+				PerformWhistle(data->CharIndex);
 			}
 		}
 	}
@@ -373,13 +403,35 @@ void Chao_Gravity_r(ObjectMaster* obj) {
 	}
 }
 
+void Chao_Movements_r(ObjectMaster* obj);
+Trampoline Chao_Movements_t(0x71EFB0, 0x71EFB9, Chao_Movements_r);
+void Chao_Movements_r(ObjectMaster* obj) {
+	if (CurrentLevel >= LevelIDs_SSGarden || obj->Data1->CharIndex != 1) {
+		ObjectFunc(original, Chao_Movements_t.Target());
+		original(obj);
+	}
+}
+
+void LoadNextChaoStage_r();
+Trampoline LoadNextChaoStage_t((int)LoadNextChaoStage, (int)LoadNextChaoStage + 0x5, LoadNextChaoStage_r);
+void LoadNextChaoStage_r() {
+	for (char p = 0; p < 8; ++p) {
+		ChaoMaster.ChaoHandles[p].SelectedChao = 0;
+	}
+
+	ChaoMaster.ChaoLoaded = false;
+
+	VoidFunc(original, LoadNextChaoStage_t.Target());
+	original();
+}
+
 extern "C"
 {
 	__declspec(dllexport) void __cdecl Init(const char *path)
 	{
 		const IniFile *config = new IniFile(std::string(path) + "\\config.ini");
 		delete config;
-
+		
 		//Trick the game into thinking we're in a specific chao garden
 		//Needed to change the water height
 		WriteJump((void*)0x715140, GetCurrentChaoStage_r);
@@ -387,31 +439,44 @@ extern "C"
 
 	__declspec(dllexport) void __cdecl OnFrame()
 	{
-		if (GameState == 15) {
-			if (CurrentLevel > LevelIDs_StationSquare) {
+		//Check the held chao as the player leave the garden or field
+		//Use those as the selected chao
+		if (GameState == 9) {
+			if (CurrentLevel >= LevelIDs_StationSquare) {
 				for (char p = 0; p < 8; ++p) {
 					SelectChao(p);
 				}
 			}
 		}
+
+		if (GameState != 4 && GameState != 15 && GameState != 16) {
+			ChaoMaster.ChaoLoaded = false;
+		}
 		
-		if ((GameState == 4 || GameState == 2) && !IsLevelChaoGarden() && ChaoMaster.PreviousLevel != CurrentLevel) {
+		//Load Chao at the beginning of levels or fields
+		if ((GameState == 4 || GameState == 2) && !IsLevelChaoGarden() && ChaoMaster.ChaoLoaded == false) {
 			for (char p = 0; p < 8; ++p) {
 
-#ifndef DEBUG
 				if (p == 0) ChaoMaster.ChaoHandles[p].SelectedChao = 1;
-#endif
+				if (p == 1) ChaoMaster.ChaoHandles[p].SelectedChao = 2;
+
+				if (ChaoMaster.ChaoHandles[p].Handle) {
+					continue;
+				}
 
 				if (ChaoMaster.ChaoHandles[p].SelectedChao) {
+					if (!EntityData1Ptrs[p]) {
+						ChaoMaster.ChaoHandles[p].SelectedChao = 0;
+						continue;
+					}
+
 					ChaoMaster.ChaoHandles[p].Handle = LoadObject((LoadObj)(LoadObj_Data1), 1, ChaoObj_Main);
 					ChaoMaster.ChaoHandles[p].Handle->Data1->CharIndex = p;
 				}
 			}
 
-			ChaoMaster.PreviousLevel = CurrentLevel;
+			ChaoMaster.ChaoLoaded = true;
 		}
-
-		
 	}
 
 	__declspec(dllexport) ModInfo SADXModInfo = { ModLoaderVer };
