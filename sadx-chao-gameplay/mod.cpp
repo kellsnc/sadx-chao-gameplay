@@ -5,6 +5,8 @@ ChaoHandle	ChaoMaster;
 NJS_VECTOR	bombpos;
 float		bombsize;
 
+#define PLAYERCOUNT 4
+
 //Chao selection functions
 ChaoData* GetChaoData(uint8_t id) {
 	return (ChaoData *)(GetChaoSaveAddress() + 2072 + (2048 * id));
@@ -121,7 +123,7 @@ extern "C"
 			ChaoMaster.ChaoLoaded = false;
 
 			if (GameMode == GameModes_Menu) {
-				for (char p = 0; p < 8; ++p) {
+				for (char p = 0; p < PLAYERCOUNT; ++p) {
 					ChaoMaster.ChaoHandles[p].SelectedChao = 0;
 				}
 			}
@@ -131,7 +133,7 @@ extern "C"
 
 		//Load Chao at the beginning of levels or fields
 		if ((GameState == 4 || GameState == 2) && !IsLevelChaoGarden() && ChaoMaster.ChaoLoaded == false) {
-			for (char p = 0; p < 8; ++p) {
+			for (char p = 0; p < PLAYERCOUNT; ++p) {
 
 				/*if (p == 0) ChaoMaster.ChaoHandles[p].SelectedChao = 1;
 				if (p == 1) ChaoMaster.ChaoHandles[p].SelectedChao = 2;*/
