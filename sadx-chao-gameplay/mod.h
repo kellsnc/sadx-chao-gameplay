@@ -10,6 +10,7 @@ typedef struct {
 typedef struct {
 	ChaoLeash ChaoHandles[8];
 	bool ChaoLoaded;
+	bool JustOutOfGarden;
 	bool AreChaoPVPLoaded;
 } ChaoHandle;
 
@@ -42,6 +43,10 @@ bool IsPlayerHoldingObject(char player);
 
 void GetWaterCollisions();
 void IsChaoInWater(ObjectMaster* obj);
+
+void ChaoHud_Main(ObjectMaster* obj);
+
+#define PLAYERCOUNT 4
 
 //from https://github.com/nihilus/hexrays_tools/blob/master/code/defs.h
 #define _BYTE  uint8_t

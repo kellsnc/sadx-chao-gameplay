@@ -30,6 +30,9 @@
     <ClCompile Include="chao.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="hud.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">

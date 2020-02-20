@@ -5,8 +5,6 @@ ChaoHandle	ChaoMaster;
 NJS_VECTOR	bombpos;
 float		bombsize;
 
-#define PLAYERCOUNT 4
-
 //Chao selection functions
 ChaoData* GetChaoData(uint8_t id) {
 	return (ChaoData *)(GetChaoSaveAddress() + 2072 + (2048 * id));
@@ -44,6 +42,7 @@ void SelectChao(char player) {
 		if (ChaoMaster.ChaoHandles[player].SelectedChao == NULL) {
 			ChaoMaster.ChaoHandles[player].SelectedChao = GetChaoByPointer(co2->ObjectHeld);
 			ChaoMaster.ChaoHandles[player].Carried = true;
+			if (CurrentLevel >= LevelIDs_SSGarden) ChaoMaster.JustOutOfGarden = true;
 		}
 	}
 	else {
@@ -109,7 +108,7 @@ extern "C"
 		//Check the held chao as the player leave the garden or field
 		//Use those as the selected chao
 		if (GameState == 9) {
-			if (CurrentLevel >= LevelIDs_StationSquare) {
+			if ((CurrentLevel >= LevelIDs_StationSquare && CurrentLevel <= LevelIDs_Past) || CurrentLevel >= LevelIDs_SSGarden) {
 				for (char p = 0; p < 8; ++p) {
 					SelectChao(p);
 				}
@@ -150,10 +149,17 @@ extern "C"
 
 					ChaoMaster.ChaoHandles[p].Handle = LoadObject((LoadObj)(LoadObj_Data1), 1, ChaoObj_Main);
 					ChaoMaster.ChaoHandles[p].Handle->Data1->CharIndex = p;
+					ChaoMaster.ChaoLoaded = true;
 				}
 			}
 
-			ChaoMaster.ChaoLoaded = true;
+			if (ChaoMaster.ChaoLoaded == true && ChaoMaster.JustOutOfGarden == true) {
+				LoadObject(LoadObj_Data1, 6, ChaoHud_Main);
+				ChaoMaster.JustOutOfGarden = false;
+			}
+			else {
+				ChaoMaster.ChaoLoaded = true;
+			}
 		}
 	}
 

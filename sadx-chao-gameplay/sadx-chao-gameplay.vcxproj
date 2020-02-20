@@ -82,6 +82,7 @@
   <ItemGroup>
     <ClCompile Include="chao.cpp" />
     <ClCompile Include="general.cpp" />
+    <ClCompile Include="hud.cpp" />
     <ClCompile Include="mod.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
