@@ -167,11 +167,10 @@ extern "C"
 
 			if (ChaoMaster.ChaoLoaded == true && ChaoMaster.LoadHUD == true) {
 				LoadObject(LoadObj_Data1, 6, ChaoHud_Main);
-				ChaoMaster.LoadHUD = false;
 			}
-			else {
-				ChaoMaster.ChaoLoaded = true;
-			}
+
+			ChaoMaster.ChaoLoaded = true;
+			ChaoMaster.LoadHUD = false;
 		}
 	}
 
