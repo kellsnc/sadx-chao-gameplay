@@ -91,6 +91,14 @@ int GetCurrentChaoStage_r() {
 	else return CurrentChaoStage;
 }
 
+bool IsLevelChaoGarden_r() {
+	for (char p = 0; p < PLAYERCOUNT; ++p) {
+		if (ChaoMaster.ChaoHandles[p].Chao) return true;
+	}
+
+	return false;
+}
+
 extern "C"
 {
 	__declspec(dllexport) void __cdecl Init(const char *path)
@@ -100,7 +108,8 @@ extern "C"
 		
 		//Trick the game into thinking we're in a specific chao garden
 		//Needed to change the water height
-		WriteJump((void*)0x715140, GetCurrentChaoStage_r);
+		WriteJump(GetCurrentChaoStage, GetCurrentChaoStage_r);
+		WriteJump(IsLevelChaoGarden, IsLevelChaoGarden_r);
 	}
 
 	__declspec(dllexport) void __cdecl OnFrame()
@@ -131,11 +140,13 @@ extern "C"
 		}
 
 		//Load Chao at the beginning of levels or fields
-		if ((GameState == 4 || GameState == 2) && !IsLevelChaoGarden() && ChaoMaster.ChaoLoaded == false) {
+		if ((GameState == 4 || GameState == 2) && CurrentLevel < LevelIDs_SSGarden && ChaoMaster.ChaoLoaded == false) {
 			for (char p = 0; p < PLAYERCOUNT; ++p) {
 
-				/*if (p == 0) ChaoMaster.ChaoHandles[p].SelectedChao = 1;
-				if (p == 1) ChaoMaster.ChaoHandles[p].SelectedChao = 2;*/
+#ifndef NDEBUG
+				if (p == 0 && ChaoMaster.ChaoHandles[0].SelectedChao == 0) ChaoMaster.ChaoHandles[p].SelectedChao = 1;
+				if (p == 1 && ChaoMaster.ChaoHandles[1].SelectedChao == 0) ChaoMaster.ChaoHandles[p].SelectedChao = 2;
+#endif
 
 				if (ChaoMaster.ChaoHandles[p].Handle) {
 					continue;

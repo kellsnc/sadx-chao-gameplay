@@ -321,10 +321,6 @@ void ChaoObj_Main(ObjectMaster* obj) {
 				data->Action = ChaoAction_Flight;
 				data->NextAction = 0;
 			}
-
-			if (PressedButtons[data->CharIndex] & Buttons_Y) {
-				PerformWhistle(data->CharIndex);
-			}
 		}
 	}
 }
