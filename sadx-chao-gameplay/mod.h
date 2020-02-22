@@ -10,7 +10,7 @@ typedef struct {
 typedef struct {
 	ChaoLeash ChaoHandles[8];
 	bool ChaoLoaded;
-	bool JustOutOfGarden;
+	bool LoadHUD;
 	bool AreChaoPVPLoaded;
 } ChaoHandle;
 

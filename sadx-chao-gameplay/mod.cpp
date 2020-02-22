@@ -42,7 +42,7 @@ void SelectChao(char player) {
 		if (ChaoMaster.ChaoHandles[player].SelectedChao == NULL) {
 			ChaoMaster.ChaoHandles[player].SelectedChao = GetChaoByPointer(co2->ObjectHeld);
 			ChaoMaster.ChaoHandles[player].Carried = true;
-			if (CurrentLevel >= LevelIDs_SSGarden) ChaoMaster.JustOutOfGarden = true;
+			if (CurrentLevel >= LevelIDs_SSGarden) ChaoMaster.LoadHUD = true;
 		}
 	}
 	else {
@@ -155,6 +155,7 @@ extern "C"
 				if (ChaoMaster.ChaoHandles[p].SelectedChao) {
 					if (!EntityData1Ptrs[p]) {
 						ChaoMaster.ChaoHandles[p].SelectedChao = 0;
+						ChaoMaster.LoadHUD = true;
 						continue;
 					}
 
@@ -164,9 +165,9 @@ extern "C"
 				}
 			}
 
-			if (ChaoMaster.ChaoLoaded == true && ChaoMaster.JustOutOfGarden == true) {
+			if (ChaoMaster.ChaoLoaded == true && ChaoMaster.LoadHUD == true) {
 				LoadObject(LoadObj_Data1, 6, ChaoHud_Main);
-				ChaoMaster.JustOutOfGarden = false;
+				ChaoMaster.LoadHUD = false;
 			}
 			else {
 				ChaoMaster.ChaoLoaded = true;
