@@ -8,6 +8,7 @@ float		bombsize;
 bool ChaoPowerups = true;
 bool ChaoAssist = true;
 bool ChaoLuck = true;
+bool ChaoHUD = true;
 
 //Chao selection functions
 ChaoData* GetChaoData(uint8_t id) {
@@ -111,6 +112,7 @@ extern "C"
 		ChaoPowerups = config->getBool("Functionalities", "EnablePowerups", true);
 		ChaoAssist = config->getBool("Functionalities", "EnableChaoAssist", true);
 		ChaoLuck = config->getBool("Functionalities", "EnableChaoLuck", true);
+		ChaoHUD = config->getBool("Functionalities", "EnableHUD", true);
 		delete config;
 		
 		//Trick the game into thinking we're in a specific chao garden
@@ -172,7 +174,7 @@ extern "C"
 				}
 			}
 
-			if (ChaoMaster.ChaoLoaded == true && ChaoMaster.LoadHUD == true) {
+			if (ChaoHUD && ChaoMaster.ChaoLoaded == true && ChaoMaster.LoadHUD == true) {
 				LoadObject(LoadObj_Data1, 6, ChaoHud_Main);
 			}
 
