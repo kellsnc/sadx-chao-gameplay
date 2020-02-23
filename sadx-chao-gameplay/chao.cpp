@@ -113,8 +113,6 @@ void ChaoObj_Main(ObjectMaster* obj) {
 
 		ChaoManager_Load(); //Load chao behaviour
 
-		ActCopy = CurrentAct;
-
 		obj->DeleteSub = ChaoObj_Delete; //When you quit a level
 		data->Action = ChaoAction_LoadChao; //Wait a frame before loading a chao
 	}
@@ -153,18 +151,6 @@ void ChaoObj_Main(ObjectMaster* obj) {
 		}
 		else {
 			Leash->Carried = false;
-		}
-
-		//If the act has changed, check water collisions again
-		if (ActCopy != CurrentAct) {
-			ActCopy = CurrentAct;
-
-			//Fix a bug at Emerald Coast act swap by reloading the chao
-			if (CurrentLevel == LevelIDs_EmeraldCoast && CurrentAct == 1) {
-				obj->DeleteSub(obj);
-				data->Action = ChaoAction_Init;
-				return;
-			}
 		}
 
 		//flight mode
