@@ -149,7 +149,7 @@ void ChaoObj_Main(ObjectMaster* obj) {
 		}
 
 		ChaoData1* chaodata1 = (ChaoData1*)Leash->Chao->Data1;
-		Chao_PlayerUp(data->CharIndex, chaodata1->ChaoDataBase_ptr);
+		if (ChaoPowerups) Chao_PlayerUp(data->CharIndex, chaodata1->ChaoDataBase_ptr);
 	}
 	else {
 		ChaoData1* chaodata1 = (ChaoData1*)Leash->Chao->Data1;
@@ -178,7 +178,7 @@ void ChaoObj_Main(ObjectMaster* obj) {
 					return;
 				}
 
-				if (chaodata1->ChaoDataBase_ptr->PowerLevel > 5 && chaodata1->ChaoDataBase_ptr->Energy > 1000 && Chao_CheckEnemy(chaodata1)) {
+				if (ChaoAssist && chaodata1->ChaoDataBase_ptr->PowerLevel > 5 && chaodata1->ChaoDataBase_ptr->Energy > 1000 && Chao_CheckEnemy(chaodata1)) {
 					data->Action = ChaoAction_Attack;
 					data->NextAction = 0;
 					return;
@@ -244,7 +244,7 @@ void ChaoObj_Main(ObjectMaster* obj) {
 						data->NextAction = 0;
 						data->LoopData = nullptr;
 
-						Chao_CheckLuck(chaodata1);
+						if (ChaoLuck) Chao_CheckLuck(chaodata1);
 
 						if (chaodata1->ChaoDataBase_ptr->PowerGrade > 2) {
 							if (rand() % 3 == 0) {

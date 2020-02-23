@@ -5,6 +5,10 @@ ChaoHandle	ChaoMaster;
 NJS_VECTOR	bombpos;
 float		bombsize;
 
+bool ChaoPowerups = true;
+bool ChaoAssist = true;
+bool ChaoLuck = true;
+
 //Chao selection functions
 ChaoData* GetChaoData(uint8_t id) {
 	return (ChaoData *)(GetChaoSaveAddress() + 2072 + (2048 * id));
@@ -104,6 +108,9 @@ extern "C"
 	__declspec(dllexport) void __cdecl Init(const char *path)
 	{
 		const IniFile *config = new IniFile(std::string(path) + "\\config.ini");
+		ChaoPowerups = config->getBool("Functionalities", "EnablePowerups", true);
+		ChaoAssist = config->getBool("Functionalities", "EnableChaoAssist", true);
+		ChaoLuck = config->getBool("Functionalities", "EnableChaoLuck", true);
 		delete config;
 		
 		//Trick the game into thinking we're in a specific chao garden

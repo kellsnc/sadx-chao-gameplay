@@ -30,6 +30,10 @@ extern ChaoHandle ChaoMaster;
 ChaoData* GetChaoData(uint8_t id);
 void KillEnemiesInSphere(NJS_VECTOR* pos, float radius);
 
+extern bool ChaoPowerups;
+extern bool ChaoAssist;
+extern bool ChaoLuck;
+
 void ChaoObj_Main(ObjectMaster* obj);
 
 float GetDistance(NJS_VECTOR* orig, NJS_VECTOR* dest);
