@@ -261,9 +261,10 @@ void ChaoObj_Main(ObjectMaster* obj) {
 					if (IsPointInsideSphere(&enemy->Data1->Position, &chaodata1->entity.Position, 15)) {
 						KillEnemiesInSphere(&enemy->Data1->Position, 5);
 						
-						if (++data->InvulnerableTime > 120) {
+						if (++data->InvulnerableTime > 120 || enemy->MainSub == BoaBoa_Main) {
 							data->LoopData = nullptr;
-							DeleteObject_(enemy);
+							data->InvulnerableTime = 0;
+							UpdateSetDataAndDelete(enemy);
 							return;
 						}
 					}
