@@ -5,7 +5,7 @@ ChaoHandle	ChaoMaster;
 NJS_VECTOR	bombpos;
 float		bombsize;
 
-bool ChaoPowerups = true;
+bool ChaoPowerups = false;
 bool ChaoAssist = true;
 bool ChaoLuck = true;
 bool ChaoHUD = true;
@@ -109,7 +109,7 @@ extern "C"
 	__declspec(dllexport) void __cdecl Init(const char *path)
 	{
 		const IniFile *config = new IniFile(std::string(path) + "\\config.ini");
-		ChaoPowerups = config->getBool("Functionalities", "EnablePowerups", true);
+		ChaoPowerups = config->getBool("Functionalities", "EnablePowerups", false);
 		ChaoAssist = config->getBool("Functionalities", "EnableChaoAssist", true);
 		ChaoLuck = config->getBool("Functionalities", "EnableChaoLuck", true);
 		ChaoHUD = config->getBool("Functionalities", "EnableHUD", true);
