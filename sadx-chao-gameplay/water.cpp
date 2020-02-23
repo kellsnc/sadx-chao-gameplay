@@ -7,6 +7,7 @@ void IsChaoInWater(ObjectMaster* obj) {
 
 	WriteData<5>((void*)0x49F201, 0x90);
 	WriteData<5>((void*)0x49F1C0, 0x90);
+	WriteData<5>((void*)0x49F43D, 0x90);
 
 	struct_a3 dyncolinfo;
 	float height = -10000000;
@@ -23,6 +24,7 @@ void IsChaoInWater(ObjectMaster* obj) {
 
 	WriteCall((void*)0x49F201, SpawnRipples);
 	WriteCall((void*)0x49F1C0, SpawnSplashParticles);
+	WriteCall((void*)0x49F43D,  (ObjectFuncPtr)0x49F0B0); //DrawCharacterShadow
 
 	WriteData((float*)0x73C24C, height);
 }
