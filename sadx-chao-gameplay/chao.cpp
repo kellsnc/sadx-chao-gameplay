@@ -64,31 +64,9 @@ void Chao_CheckLuck(ChaoData1* chaodata) {
 	}
 }
 
-// Flight functions
+// Flight function
 inline float Chao_GetFlightSpeed(ChaoDataBase* chaodatabase) {
 	return min(chaodatabase->FlyLevel, 99) / 2;
-}
-
-//Whistle function
-void PerformWhistle(char id) {
-	EntityData1* data1 = EntityData1Ptrs[id];
-	int flag = 0;
-
-	switch (data1->CharID) {
-	case Characters_Sonic: flag = 0x854A01;  PlaySound(775, 0, 0, 0); break;
-	case Characters_Tails: flag = 8864257; PlaySound(776, 0, 0, 0); break;
-	case Characters_Knuckles: flag = 7485441; PlaySound(794, 0, 0, 0); break;
-	case Characters_Amy: flag = 5518337; PlaySound(820, 0, 0, 0); break;
-	case Characters_Gamma: flag = 5913089; BigWhistle(1, 93, 0, 31); break;
-	case Characters_Big: flag = 6829569; PlaySound(856, 0, 0, 0); break;
-	}
-
-	CharObj2* co2 = CharObj2Ptrs[id];
-
-	if (co2->Speed.x < 2 && data1->Status & Status_Ground) {
-		data1->Action = BYTE1(flag);
-		co2->AnimationThing.Index = HIWORD(flag);
-	}
 }
 
 //Custom Chao Actions
@@ -313,7 +291,7 @@ void ChaoObj_Main(ObjectMaster* obj) {
 			EntityData1* data1 = EntityData1Ptrs[data->CharIndex];
 
 			if (PressedButtons[data->CharIndex] & Buttons_C) {
-				PerformWhistle(data->CharIndex);
+				Controllers[data->CharIndex].PressedButtons = Buttons_Y;
 
 				Leash->Chao->Data1->CharIndex = 1;
 				data->Action = ChaoAction_Flight;
