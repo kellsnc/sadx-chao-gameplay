@@ -64,9 +64,21 @@ void Chao_CheckLuck(ChaoData1* chaodata) {
 	}
 }
 
-// Flight function
+//Flight function
 inline float Chao_GetFlightSpeed(ChaoDataBase* chaodatabase) {
 	return min(chaodatabase->FlyLevel, 99) / 2;
+}
+
+//Chao can make players stronger
+void Chao_PlayerUp(char player, ChaoDataBase* chaodatabase) {
+	PhysicsData* physics = &CharObj2Ptrs[player]->PhysicsData;
+	char charid = GetCharacterID(player);
+
+	physics->HSpeedCap = PhysicsArray[charid].HSpeedCap + ( min(99, chaodatabase->RunLevel) / 30);
+	physics->GroundAccel = PhysicsArray[charid].GroundAccel + ( min(99, chaodatabase->RunLevel) / 60);
+	physics->MaxAccel = PhysicsArray[charid].MaxAccel + (min(99, chaodatabase->RunLevel) / 40);
+	
+	physics->JumpSpeed = PhysicsArray[charid].JumpSpeed + (min(99, chaodatabase->FlyLevel) * 0.003);
 }
 
 //Custom Chao Actions
@@ -135,6 +147,9 @@ void ChaoObj_Main(ObjectMaster* obj) {
 			data->Action = ChaoAction_Flight;
 			data->CharID = 0;
 		}
+
+		ChaoData1* chaodata1 = (ChaoData1*)Leash->Chao->Data1;
+		Chao_PlayerUp(data->CharIndex, chaodata1->ChaoDataBase_ptr);
 	}
 	else {
 		ChaoData1* chaodata1 = (ChaoData1*)Leash->Chao->Data1;
