@@ -41,9 +41,6 @@ NJS_VECTOR GetPathPosition(NJS_VECTOR* orig, NJS_VECTOR* dest, float state);
 bool IsPointInsideSphere(NJS_VECTOR* center, NJS_VECTOR* pos, float radius);
 bool IsPlayerHoldingObject(char player);
 
-void GetWaterCollisions();
-void IsChaoInWater(ObjectMaster* obj);
-
 void ChaoHud_Main(ObjectMaster* obj);
 
 #define PLAYERCOUNT 4

@@ -134,7 +134,6 @@ void ChaoObj_Main(ObjectMaster* obj) {
 		}
 
 		ChaoManager_Load(); //Load chao behaviour
-		GetWaterCollisions(); //Hacky solution to make chao swim
 
 		ActCopy = CurrentAct;
 
@@ -180,7 +179,6 @@ void ChaoObj_Main(ObjectMaster* obj) {
 
 		//If the act has changed, check water collisions again
 		if (ActCopy != CurrentAct) {
-			GetWaterCollisions();
 			ActCopy = CurrentAct;
 
 			//Fix a bug at Emerald Coast act swap by reloading the chao

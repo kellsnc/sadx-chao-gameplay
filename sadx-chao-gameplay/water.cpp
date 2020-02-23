@@ -1,45 +1,26 @@
 #include "stdafx.h"
 #include "mod.h"
 
-std::vector<NJS_PLANE> waterlist = {};
-
-void GetWaterCollisions() {
-	waterlist.clear();
-	for (int i = 0; i < CurrentLandTable->COLCount; ++i) {
-		if (CurrentLandTable->Col[i].Flags & ColFlags_Water) {
-
-			float x_min = CurrentLandTable->Col[i].Center.x - CurrentLandTable->Col[i].Radius;
-			float z_min = CurrentLandTable->Col[i].Center.z - CurrentLandTable->Col[i].Radius;
-			float x_max = CurrentLandTable->Col[i].Center.x + CurrentLandTable->Col[i].Radius;
-			float z_max = CurrentLandTable->Col[i].Center.z + CurrentLandTable->Col[i].Radius;
-			float y = CurrentLandTable->Col[i].Center.y;
-
-			NJS_PLANE temp = { x_min, y, z_min, x_max, 0, z_max };
-			waterlist.push_back(temp);
-		}
-	}
-}
-
+//Get the water collision directly above the chao
 void IsChaoInWater(ObjectMaster* obj) {
 	ChaoData1* chaodata1 = (ChaoData1*)obj->Data1;
-	ChaoData2* chaodata2 = (ChaoData2*)obj->Data2;
 
 	float height = -10000000;
-	if (waterlist.size() > 0) {
-		NJS_VECTOR pos = chaodata1->entity.Position;
-		NJS_PLANE wpos;
-		for (int i = 0; i < waterlist.size(); ++i) {
-			wpos = waterlist[i];
-			if (pos.y < wpos.py + 2 && pos.y > wpos.py - 170) {
-				if (pos.x > wpos.px&& pos.x < wpos.vx) {
-					if (pos.z > wpos.pz&& pos.z < wpos.vz) {
-						height = wpos.py;
-					}
-				}
-			}
-		}
+
+	struct_a3 dyncolinfo;
+	WriteData<5>((void*)0x49F201, 0x90);
+	RunEntityIntersections(&chaodata1->entity, &dyncolinfo);
+
+	if (dyncolinfo.ColFlagsA & (0x400002 | ColFlags_Water)) {
+		if (dyncolinfo.DistanceMin > -1000000) height = dyncolinfo.DistanceMin + 1;
+	}
+	else {
+		chaodata1->entity.Position.y += 10;
+		RunEntityIntersections(&chaodata1->entity, &dyncolinfo);
+		chaodata1->entity.Position.y -= 10;
 	}
 
+	WriteCall((void*)0x49F201, SpawnRipples);
 	WriteData((float*)0x73C24C, height);
 }
 
