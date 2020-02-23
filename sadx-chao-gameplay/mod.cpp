@@ -104,6 +104,12 @@ bool IsLevelChaoGarden_r() {
 	return false;
 }
 
+bool IsLevelChaoGarden_orig() {
+	if (CurrentLevel >= LevelIDs_SSGarden) return true;
+
+	return false;
+}
+
 extern "C"
 {
 	__declspec(dllexport) void __cdecl Init(const char *path)
@@ -119,6 +125,7 @@ extern "C"
 		//Needed to change the water height
 		WriteJump(GetCurrentChaoStage, GetCurrentChaoStage_r);
 		WriteJump(IsLevelChaoGarden, IsLevelChaoGarden_r);
+		WriteCall((void*)0x40FDC0, IsLevelChaoGarden_orig);
 	}
 
 	__declspec(dllexport) void __cdecl OnFrame()
