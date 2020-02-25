@@ -96,18 +96,18 @@ int GetCurrentChaoStage_r() {
 	else return CurrentChaoStage;
 }
 
+bool IsLevelChaoGarden_orig() {
+	if (CurrentLevel >= LevelIDs_SSGarden) return true;
+
+	return false;
+}
+
 bool IsLevelChaoGarden_r() {
 	for (char p = 0; p < PLAYERCOUNT; ++p) {
 		if (ChaoMaster.ChaoHandles[p].Chao) return true;
 	}
 
-	return false;
-}
-
-bool IsLevelChaoGarden_orig() {
-	if (CurrentLevel >= LevelIDs_SSGarden) return true;
-
-	return false;
+	return IsLevelChaoGarden_orig();
 }
 
 extern "C"
@@ -181,8 +181,29 @@ extern "C"
 				}
 			}
 
-			if (ChaoHUD && ChaoMaster.ChaoLoaded == true && ChaoMaster.LoadHUD == true) {
-				LoadObject(LoadObj_Data1, 6, ChaoHud_Main);
+			//If at least one chao is loaded, load the common chao stuff
+			if (ChaoMaster.ChaoLoaded == true) {
+				//Load the chao textures
+				LoadChaoTexlist("AL_DX_PARTS_TEX", (NJS_TEXLIST*)0x33A1340, 0);
+				LoadChaoTexlist("AL_BODY", ChaoTexLists, 0);
+				LoadChaoTexlist("AL_jewel", &ChaoTexLists[4], 0);
+				LoadChaoTexlist("AL_ICON", &ChaoTexLists[3], 0);
+				LoadChaoTexlist("AL_EYE", &ChaoTexLists[2], 0);
+				LoadChaoTexlist("AL_MOUTH", &ChaoTexLists[5], 0);
+				LoadChaoTexlist("AL_TEX_COMMON", &ChaoTexLists[1], 1u);
+
+				//PVPs only need to be loaded once
+				if (!ChaoMaster.FileLoaded) {
+					al_confirmload_load();
+					LoadChaoPVPs();
+					ChaoMaster.FileLoaded = true;
+				}
+
+				ChaoManager_Load(); //Load chao behaviour
+
+				if (ChaoHUD && ChaoMaster.LoadHUD == true) {
+					LoadObject(LoadObj_Data1, 6, ChaoHud_Main);
+				}
 			}
 
 			ChaoMaster.ChaoLoaded = true;

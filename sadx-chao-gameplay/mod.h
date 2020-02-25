@@ -11,7 +11,7 @@ typedef struct {
 	ChaoLeash ChaoHandles[8];
 	bool ChaoLoaded;
 	bool LoadHUD;
-	bool AreChaoPVPLoaded;
+	bool FileLoaded;
 } ChaoHandle;
 
 enum ChaoActions {
@@ -38,7 +38,7 @@ extern bool ChaoLuck;
 void ChaoObj_Main(ObjectMaster* obj);
 
 float GetDistance(NJS_VECTOR* orig, NJS_VECTOR* dest);
-NJS_VECTOR GetPointToFollow(NJS_VECTOR* pos, Rotation3* rot);
+NJS_VECTOR GetPointToFollow(NJS_VECTOR* pos, NJS_VECTOR* dir, Rotation3* rot);
 Rotation3 fPositionToRotation(NJS_VECTOR* orig, NJS_VECTOR* point);
 NJS_VECTOR GetPathPosition(NJS_VECTOR* orig, NJS_VECTOR* dest, float state);
 bool IsPointInsideSphere(NJS_VECTOR* center, NJS_VECTOR* pos, float radius);

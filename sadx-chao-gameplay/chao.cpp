@@ -83,19 +83,17 @@ void Chao_PlayerUp(char player, ChaoDataBase* chaodatabase) {
 
 //Custom Chao Actions
 void ChaoObj_Delete(ObjectMaster* obj) {
-	DeleteObjectMaster(ChaoManager);
-	ChaoManager = nullptr;
+	if (obj) {
+		if (ChaoMaster.ChaoHandles[obj->Data1->CharIndex].Chao) {
+			CheckThingButThenDeleteObject(ChaoMaster.ChaoHandles[obj->Data1->CharIndex].Chao);
+			ChaoMaster.ChaoHandles[obj->Data1->CharIndex].Chao = nullptr;
+		}
 
-	DeleteObjectMaster(ChaoMaster.ChaoHandles[obj->Data1->CharIndex].Chao);
-	ChaoMaster.ChaoHandles[obj->Data1->CharIndex].Chao = nullptr;
-	ChaoMaster.ChaoHandles[obj->Data1->CharIndex].Handle = nullptr;
+		ChaoMaster.ChaoHandles[obj->Data1->CharIndex].Handle = nullptr;
 
-	//Release the chao textures
-	FreeChaoTexlists();
-
-	//reset default water height
-	float height = 0;
-	WriteData((float*)0x73C24C, height);
+		float height = 0;
+		WriteData((float*)0x73C24C, height);
+	}
 }
 
 void ChaoObj_Main(ObjectMaster* obj) {
@@ -106,24 +104,6 @@ void ChaoObj_Main(ObjectMaster* obj) {
 	if (Action == ChaoAction_Init) {
 		//We wait a bit before loading chao stuff
 		if (!CurrentLandTable) return;
-
-		//Load the chao textures
-		LoadChaoTexlist("AL_DX_PARTS_TEX", (NJS_TEXLIST*)0x33A1340, 0);
-		LoadChaoTexlist("AL_BODY", ChaoTexLists, 0);
-		LoadChaoTexlist("AL_jewel", &ChaoTexLists[4], 0);
-		LoadChaoTexlist("AL_ICON", &ChaoTexLists[3], 0);
-		LoadChaoTexlist("AL_EYE", &ChaoTexLists[2], 0);
-		LoadChaoTexlist("AL_MOUTH", &ChaoTexLists[5], 0);
-		LoadChaoTexlist("AL_TEX_COMMON", &ChaoTexLists[1], 1u);
-
-		//PVPs only need to be loaded once
-		if (!ChaoMaster.AreChaoPVPLoaded) {
-			al_confirmload_load();
-			LoadChaoPVPs();
-			ChaoMaster.AreChaoPVPLoaded = true;
-		}
-
-		ChaoManager_Load(); //Load chao behaviour
 
 		obj->DeleteSub = ChaoObj_Delete; //When you quit a level
 		data->Action = ChaoAction_LoadChao; //Wait a frame before loading a chao
@@ -186,7 +166,16 @@ void ChaoObj_Main(ObjectMaster* obj) {
 
 				EntityData1* data1 = EntityData1Ptrs[data->CharIndex];
 
-				data->Position = GetPointToFollow(&data1->Position, &data1->Rotation);
+				NJS_VECTOR dir = { -10, 10, 5 };
+
+				if (data1->CharID == Characters_Big) {
+					dir = { -14, 14, 7 };
+				}
+				else if (data1->CharID == Characters_Gamma) {
+					dir = { -10, 16, 6 };
+				}
+
+				data->Position = GetPointToFollow(&data1->Position, &dir, &data1->Rotation);
 				float dist = GetDistance(&data->Position, &chaodata1->entity.Position);
 
 				//adjust flight speed with the fly level of the chao
@@ -264,7 +253,16 @@ void ChaoObj_Main(ObjectMaster* obj) {
 						if (++data->InvulnerableTime > 120 || enemy->MainSub == BoaBoa_Main) {
 							data->LoopData = nullptr;
 							data->InvulnerableTime = 0;
-							UpdateSetDataAndDelete(enemy);
+
+							if (enemy->MainSub != Sweep_Main) {
+								if (enemy->SETData.SETData) {
+									UpdateSetDataAndDelete(enemy);
+								}
+								else {
+									CheckThingButThenDeleteObject(enemy);
+								}
+							}
+							
 							return;
 						}
 					}

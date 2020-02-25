@@ -4,8 +4,6 @@
 NJS_TEXNAME CHAOHUD_TEXNAME[6];
 NJS_TEXLIST CHAOHUD_TEXLIST = { arrayptrandlength(CHAOHUD_TEXNAME) };
 
-NJS_VECTOR ChaoSpritePos[PLAYERCOUNT];
-
 void CalculateScreenPos(NJS_QUAD_TEXTURE* quad, float p1, float p2, float s1, float s2) {
 	quad->x1 = HorizontalStretch * p1;
 	quad->x2 = quad->x1 + HorizontalStretch * s1;
@@ -37,8 +35,6 @@ void ChaoHud_DrawSprite(char player, char chao, float alpha) {
 			SetHudColorAndTextureNum(1, color);
 			DrawRectPoints((NJS_POINT2*)&Sprite, 1);
 		}
-		
-		Direct3D_ResetZFunc();
 	}
 }
 

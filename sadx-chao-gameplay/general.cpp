@@ -5,14 +5,12 @@ float GetDistance(NJS_VECTOR* orig, NJS_VECTOR* dest) {
 	return sqrtf(powf(dest->x - orig->x, 2) + powf(dest->y - orig->y, 2) + powf(dest->z - orig->z, 2));
 }
 
-NJS_VECTOR GetPointToFollow(NJS_VECTOR* pos, Rotation3* rot) {
+NJS_VECTOR GetPointToFollow(NJS_VECTOR* pos, NJS_VECTOR* dir, Rotation3* rot) {
 	NJS_VECTOR point;
-
-	NJS_VECTOR dir = { -10, 10, 5 };
 	njPushMatrix(_nj_unit_matrix_);
 	njTranslateV(0, pos);
 	njRotateY(0, -rot->y);
-	njCalcPoint(0, &dir, &point);
+	njCalcPoint(0, dir, &point);
 	njPopMatrix(1u);
 	return point;
 }
