@@ -25,7 +25,8 @@ char GetChaoByPointer(ObjectMaster* chao) {
 		if (chaodata->ChaoDataBase_ptr
 			&& tempdata->data.Lifespan == chaodata->ChaoDataBase_ptr->Lifespan
 			&& tempdata->data.DNA.FavoriteFruit1 == chaodata->ChaoDataBase_ptr->DNA.FavoriteFruit1
-			&& tempdata->data.Energy == chaodata->ChaoDataBase_ptr->Energy) {
+			&& tempdata->data.Energy == chaodata->ChaoDataBase_ptr->Energy
+			&& chaodata->ChaoDataBase_ptr->Type != ChaoType_Egg) {
 			return i + 1;
 		}
 	}
@@ -123,7 +124,7 @@ extern "C"
 		
 		//Trick the game into thinking we're in a specific chao garden
 		//Needed to change the water height
-		WriteJump(GetCurrentChaoStage, GetCurrentChaoStage_r);
+		//WriteJump(GetCurrentChaoStage, GetCurrentChaoStage_r);
 		WriteJump(IsLevelChaoGarden, IsLevelChaoGarden_r);
 		WriteCall((void*)0x40FDC0, IsLevelChaoGarden_orig);
 	}
