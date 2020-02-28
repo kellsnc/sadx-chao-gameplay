@@ -5,10 +5,10 @@
 ObjectMaster* Chao_GetClosestEnemy(NJS_VECTOR* pos, float stamina) {
 	ObjectMaster* current = ObjectListThing[3];
 	while (1) {
-		if (current->MainSub == Kiki_Main || current->MainSub == RhinoTank_Main || current->MainSub == Sweep_Main
+		if (current->MainSub == Kiki_Main || current->MainSub == RhinoTank_Main || current->MainSub == ESman
 			|| current->MainSub == SpinnerA_Main || current->MainSub == SpinnerB_Main || current->MainSub == SpinnerC_Main
 			|| current->MainSub == UnidusA_Main || current->MainSub == UnidusB_Main || current->MainSub == UnidusC_Main
-			|| current->MainSub == Leon_Main || current->MainSub == BoaBoa_Main || current->MainSub == ESman) {
+ 			|| current->MainSub == Leon_Main || (current->MainSub == BoaBoa_Main && current->Child && current->Child->MainSub == (ObjectFuncPtr)0x7A00F0)) {
 
 			float dist = GetDistance(pos, &current->Data1->Position);
 			if (GetDistance(pos, &current->Data1->Position) < 200 + stamina) return current;
@@ -247,29 +247,21 @@ void ChaoObj_Main(ObjectMaster* obj) {
 						return;
 					}
 
-					if (IsPointInsideSphere(&enemy->Data1->Position, &chaodata1->entity.Position, 15)) {
-						KillEnemiesInSphere(&enemy->Data1->Position, 5);
-						
-						if (++data->InvulnerableTime > 120 || enemy->MainSub == BoaBoa_Main) {
-							data->LoopData = nullptr;
-							data->InvulnerableTime = 0;
+					if (enemy->MainSub == BoaBoa_Main && enemy->Child) data->Position = enemy->Child->Data1->Position;
+					else data->Position = enemy->Data1->Position;
 
-							if (enemy->MainSub != Sweep_Main) {
-								if (enemy->SETData.SETData) {
-									UpdateSetDataAndDelete(enemy);
-								}
-								else {
-									CheckThingButThenDeleteObject(enemy);
-								}
-							}
-							
-							return;
-						}
-					}
-
-					data->Position = enemy->Data1->Position;
 					float dist = GetDistance(&data->Position, &chaodata1->entity.Position);
 					float speed = Chao_GetFlightSpeed(chaodata1->ChaoDataBase_ptr);
+
+					if (++data->InvulnerableTime > 120 && dist < 15) {
+						KillEnemiesInSphere(&enemy->Data1->Position, 15);
+					}
+
+					if (dist > 500) {
+						data->NextAction = 0;
+						data->LoopData = nullptr;
+						data->Action = ChaoAction_Flight;
+					}
 
 					dist += speed;
 					dist = fmax(fmin(dist, 200), 80 + speed);

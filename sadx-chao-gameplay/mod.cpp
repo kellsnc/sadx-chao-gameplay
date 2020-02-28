@@ -124,7 +124,7 @@ extern "C"
 		
 		//Trick the game into thinking we're in a specific chao garden
 		//Needed to change the water height
-		//WriteJump(GetCurrentChaoStage, GetCurrentChaoStage_r);
+		WriteJump(GetCurrentChaoStage, GetCurrentChaoStage_r);
 		WriteJump(IsLevelChaoGarden, IsLevelChaoGarden_r);
 		WriteCall((void*)0x40FDC0, IsLevelChaoGarden_orig);
 	}
