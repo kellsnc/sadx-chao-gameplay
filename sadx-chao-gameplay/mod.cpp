@@ -97,18 +97,16 @@ int GetCurrentChaoStage_r() {
 	else return CurrentChaoStage;
 }
 
-bool IsLevelChaoGarden_orig() {
-	if (CurrentLevel >= LevelIDs_SSGarden) return true;
-
-	return false;
-}
-
 bool IsLevelChaoGarden_r() {
 	for (char p = 0; p < PLAYERCOUNT; ++p) {
 		if (ChaoMaster.ChaoHandles[p].Chao) return true;
 	}
 
-	return IsLevelChaoGarden_orig();
+	if (CurrentLevel >= LevelIDs_SSGarden) {
+		return true;
+	}
+
+	return false;
 }
 
 extern "C"
@@ -125,8 +123,10 @@ extern "C"
 		//Trick the game into thinking we're in a specific chao garden
 		//Needed to change the water height
 		WriteJump(GetCurrentChaoStage, GetCurrentChaoStage_r);
-		WriteJump(IsLevelChaoGarden, IsLevelChaoGarden_r);
-		WriteCall((void*)0x40FDC0, IsLevelChaoGarden_orig);
+
+		//Allow whistle and petting
+		WriteCall((void*)0x442570, IsLevelChaoGarden_r);
+		WriteCall((void*)0x442680, IsLevelChaoGarden_r);
 	}
 
 	__declspec(dllexport) void __cdecl OnFrame()
