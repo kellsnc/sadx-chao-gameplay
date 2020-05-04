@@ -21,12 +21,7 @@ char GetChaoByPointer(ObjectMaster* chao) {
 	if (!chaodata) return 0;
 
 	for (uint8_t i = 0; i < 24; ++i) {
-		ChaoData* tempdata = GetChaoData(i);
-		if (chaodata->ChaoDataBase_ptr
-			&& tempdata->data.Lifespan == chaodata->ChaoDataBase_ptr->Lifespan
-			&& tempdata->data.DNA.FavoriteFruit1 == chaodata->ChaoDataBase_ptr->DNA.FavoriteFruit1
-			&& tempdata->data.Energy == chaodata->ChaoDataBase_ptr->Energy
-			&& chaodata->ChaoDataBase_ptr->Type != ChaoType_Egg) {
+		if (chaodata->ChaoDataBase_ptr == &GetChaoData(i)->data && chaodata->ChaoDataBase_ptr->Type != ChaoType_Egg) {
 			return i + 1;
 		}
 	}

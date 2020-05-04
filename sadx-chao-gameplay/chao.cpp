@@ -133,7 +133,7 @@ void ChaoObj_Main(ObjectMaster* obj) {
 	}
 	else {
 		ChaoData1* chaodata1 = (ChaoData1*)Leash->Chao->Data1;
-
+		
 		if (EntityData1Ptrs[data->CharIndex] == nullptr || chaodata1 == nullptr || &chaodata1->entity == nullptr) {
 			DeleteObject_(obj);
 		}
@@ -141,7 +141,7 @@ void ChaoObj_Main(ObjectMaster* obj) {
 		chaodata1->ChaoDataBase_ptr->Lifespan = 1;
 		chaodata1->ChaoDataBase_ptr->Lifespan2 = 1;
 
-		if (IsPlayerHoldingObject(data->CharIndex)) {
+		if (IsPlayerHoldingChao(data->CharIndex, chaodata1)) {
 			Leash->Carried = true;
 		}
 		else {

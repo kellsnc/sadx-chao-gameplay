@@ -42,7 +42,7 @@ NJS_VECTOR GetPointToFollow(NJS_VECTOR* pos, NJS_VECTOR* dir, Rotation3* rot);
 Rotation3 fPositionToRotation(NJS_VECTOR* orig, NJS_VECTOR* point);
 NJS_VECTOR GetPathPosition(NJS_VECTOR* orig, NJS_VECTOR* dest, float state);
 bool IsPointInsideSphere(NJS_VECTOR* center, NJS_VECTOR* pos, float radius);
-bool IsPlayerHoldingObject(char player);
+bool IsPlayerHoldingChao(char player, ChaoData1* chao);
 
 void ChaoHud_Main(ObjectMaster* obj);
 

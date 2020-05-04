@@ -43,11 +43,16 @@ bool IsPointInsideSphere(NJS_VECTOR* center, NJS_VECTOR* pos, float radius) {
 	return (powf(pos->x - center->x, 2) + pow(pos->y - center->y, 2) + pow(pos->z - center->z, 2)) <= pow(radius, 2);
 }
 
-bool IsPlayerHoldingObject(char player) {
+bool IsPlayerHoldingChao(char player, ChaoData1* chao) {
 	EntityData1* data = EntityData1Ptrs[player];
-	if ((data->CharID == Characters_Big || data->CharID == Characters_Gamma) && data->Action == 17) return true;
-	if ((data->CharID == Characters_Sonic || data->CharID == Characters_Tails) && data->Action == 23) return true;
-	if (data->CharID == Characters_Amy && data->Action == 25) return true;
-	if (data->CharID == Characters_Knuckles && data->Action == 29) return true;
+	CharObj2* co2 = CharObj2Ptrs[player];
+
+	if (co2->ObjectHeld && co2->ObjectHeld->Data1) {
+		ChaoData1* chaodata = (ChaoData1*)co2->ObjectHeld->Data1;
+		if (chaodata->ChaoDataBase_ptr == chao->ChaoDataBase_ptr) {
+			return true;
+		}
+	}
+
 	return false;
 }
