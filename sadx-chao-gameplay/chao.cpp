@@ -8,7 +8,7 @@ ObjectMaster* Chao_GetClosestEnemy(NJS_VECTOR* pos, float stamina) {
 		if (current->MainSub == Kiki_Main || current->MainSub == RhinoTank_Main || current->MainSub == ESman
 			|| current->MainSub == SpinnerA_Main || current->MainSub == SpinnerB_Main || current->MainSub == SpinnerC_Main
 			|| current->MainSub == UnidusA_Main || current->MainSub == UnidusB_Main || current->MainSub == UnidusC_Main
- 			|| current->MainSub == Leon_Main || (current->MainSub == BoaBoa_Main && current->Child && current->Child->MainSub == (ObjectFuncPtr)0x7A00F0)) {
+ 			|| (current->MainSub == BoaBoa_Main && current->Child && current->Child->MainSub == (ObjectFuncPtr)0x7A00F0)) {
 
 			float dist = GetDistance(pos, &current->Data1->Position);
 			if (GetDistance(pos, &current->Data1->Position) < 200 + stamina) return current;
@@ -118,6 +118,7 @@ void ChaoObj_Main(ObjectMaster* obj) {
 
 		//Load the chao
 		Leash->Chao = CreateChao(chaodata, 0, Leash->Chao, &v, 0);
+		
 		if (Leash->Carried == true) {
 			SetHeldObject(data->CharIndex, Leash->Chao);
 			data->Action = ChaoAction_Free;
@@ -127,6 +128,8 @@ void ChaoObj_Main(ObjectMaster* obj) {
 			data->Action = ChaoAction_Flight;
 			data->CharID = 0;
 		}
+
+		Leash->Chao->MainSub(Leash->Chao);
 
 		ChaoData1* chaodata1 = (ChaoData1*)Leash->Chao->Data1;
 		if (ChaoPowerups) Chao_PlayerUp(data->CharIndex, chaodata1->ChaoDataBase_ptr);
@@ -252,10 +255,6 @@ void ChaoObj_Main(ObjectMaster* obj) {
 
 					float dist = GetDistance(&data->Position, &chaodata1->entity.Position);
 					float speed = Chao_GetFlightSpeed(chaodata1->ChaoDataBase_ptr);
-
-					if (++data->InvulnerableTime > 120 && dist < 15) {
-						KillEnemiesInSphere(&enemy->Data1->Position, 15);
-					}
 
 					if (dist > 500) {
 						data->NextAction = 0;

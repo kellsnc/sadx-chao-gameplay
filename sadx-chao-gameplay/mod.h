@@ -29,7 +29,6 @@ ObjectFunc(UpdateSetDataAndDelete, 0x46C150);
 
 extern ChaoHandle ChaoMaster;
 ChaoData* GetChaoData(uint8_t id);
-void KillEnemiesInSphere(NJS_VECTOR* pos, float radius);
 
 extern bool ChaoPowerups;
 extern bool ChaoAssist;

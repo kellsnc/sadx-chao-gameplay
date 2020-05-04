@@ -2,8 +2,6 @@
 #include "mod.h"
 
 ChaoHandle	ChaoMaster;
-NJS_VECTOR	bombpos;
-float		bombsize;
 
 bool ChaoPowerups = false;
 bool ChaoAssist = true;
@@ -56,22 +54,24 @@ bool OhNoImDead2(EntityData1* a1, ObjectData2* a2);
 Trampoline OhNoImDead2_t(0x004CE030, 0x004CE036, OhNoImDead2);
 bool OhNoImDead2(EntityData1* a1, ObjectData2* a2) {
 	if (a1->CollisionInfo->CollidingObject) {
-		if (a1->CollisionInfo->CollidingObject->Object->MainSub == Chao_Main
-			&& a1->CollisionInfo->CollidingObject->Object->Data1->Action == ChaoAction_Attack) return 1;
-	}
-
-	if (bombsize && GetDistance(&bombpos, &a1->Position) < bombsize) {
-		bombsize = 0;
-		return 1;
+		if (a1->CollisionInfo->CollidingObject->Object->MainSub == Chao_Main) 
+			return 1;
 	}
 	
 	FunctionPointer(bool, original, (EntityData1 * a1, ObjectData2 * a2), OhNoImDead2_t.Target());
 	return original(a1, a2);
 }
 
-void KillEnemiesInSphere(NJS_VECTOR* pos, float radius) {
-	bombpos = *pos;
-	bombsize = radius;
+//Collision fix
+CollisionData ChaoCol = { 0, 0, 0x77, 0x0E0, 0, {0, 2, 0}, {2, 2, 0.69999999f} };
+
+void __cdecl ChaoCollision_Init(ObjectMaster* obj, CollisionData* collisionArray, int count, unsigned __int8 list) {
+	if (CurrentLevel < LevelIDs_SSGarden || CurrentLevel > LevelIDs_ChaoRace) {
+		Collision_Init(obj, &ChaoCol, 1, 4);
+	}
+	else {
+		Collision_Init(obj, collisionArray, count, list);
+	}
 }
 
 void LoadNextChaoStage_r();
@@ -118,6 +118,8 @@ extern "C"
 		//Trick the game into thinking we're in a specific chao garden
 		//Needed to change the water height
 		WriteJump(GetCurrentChaoStage, GetCurrentChaoStage_r);
+
+		WriteCall((void*)0x720781, ChaoCollision_Init);
 
 		//Allow whistle and petting
 		WriteCall((void*)0x442570, IsLevelChaoGarden_r);
