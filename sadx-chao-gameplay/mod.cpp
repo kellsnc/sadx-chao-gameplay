@@ -63,11 +63,9 @@ bool OhNoImDead2(EntityData1* a1, ObjectData2* a2) {
 }
 
 //Collision fix
-CollisionData ChaoCol = { 0, 0, 0x77, 0x0E0, 0, {0, 2, 0}, {2, 2, 0.69999999f} };
-
 void __cdecl ChaoCollision_Init(ObjectMaster* obj, CollisionData* collisionArray, int count, unsigned __int8 list) {
 	if (CurrentLevel < LevelIDs_SSGarden || CurrentLevel > LevelIDs_ChaoRace) {
-		Collision_Init(obj, &ChaoCol, 1, 4);
+		Collision_Init(obj, collisionArray, count, 4);
 	}
 	else {
 		Collision_Init(obj, collisionArray, count, list);
