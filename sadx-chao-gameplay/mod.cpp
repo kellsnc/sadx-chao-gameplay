@@ -30,6 +30,10 @@ void LoadChaoFiles() {
 	LoadChaoTexlist("AL_EYE", &ChaoTexLists[2], 0);
 	LoadChaoTexlist("AL_MOUTH", &ChaoTexLists[5], 0);
 	LoadChaoTexlist("AL_TEX_COMMON", &ChaoTexLists[1], 1u);
+	LoadChaoTexlist("AL_DX_OBJ_CMN", &AL_DX_OBJ_CMN_TEXLIST, 1u);
+	LoadChaoTexlist("AL_DX_ETC", &AL_DX_ETC_TEXLIST, 1u);
+	LoadChaoTexlist("AL_OBJECT", &AL_OBJECT_TEXLIST, 1u);
+	LoadChaoTexlist("AL_TOY", &AL_TOY_TEXLIST, 1u);
 
 	al_confirmload_load();
 	LoadChaoPVPs();
