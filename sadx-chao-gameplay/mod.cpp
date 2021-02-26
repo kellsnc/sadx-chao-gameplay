@@ -145,6 +145,20 @@ void LoadNextChaoStage_r() {
 	DrawHUDNext = true;
 }
 
+bool IsLevelChaoGarden_r() {
+	foreach(i, SelectedChao) {
+		if (SelectedChao[i].id != ChaoLeashMode_Disabled) {
+			return true;
+		}
+	}
+
+	if (CurrentLevel >= LevelIDs_SSGarden) {
+		return true;
+	}
+
+	return false;
+}
+
 extern "C" {
 	__declspec(dllexport) void __cdecl Init(const char *path) {
 		const IniFile *config = new IniFile(std::string(path) + "\\config.ini");
@@ -155,6 +169,10 @@ extern "C" {
 		delete config;
 
 		WriteCall((void*)0x720781, ChaoCollision_Init);
+
+		// Whistle in levels
+		WriteCall((void*)0x442570, IsLevelChaoGarden_r);
+		WriteCall((void*)0x442680, IsLevelChaoGarden_r);
 		
 #ifndef NDEBUG
 		SelectedChao[0].id = 0;
