@@ -4,18 +4,18 @@
 #define TARGET_STATIC(name) ((decltype(name##_r)*)name##_t.Target())
 #define foreach(item, items) for (int item = 0; item < LengthOfArray(items); ++item)
 
-//void __usercall PutPlayerBehind(NJS_VECTOR * pos@<edi>, EntityData1 * data@<esi>, float dist)
+//void __usercall PutPlayerBehind(NJS_VECTOR* pos@<edi>, EntityData1* data@<esi>, float dist)
 static const void* const PutPlayerBehindPtr = (void*)0x47DD50;
 static inline void PutPlayerBehind(NJS_VECTOR* pos, EntityData1* data, float dist)
 {
-	__asm
-	{
-		push[dist]
-		mov esi, [data]
-		mov edi, [pos]
-		call PutPlayerBehindPtr
-		add esp, 4
-	}
+    __asm
+    {
+        push[dist]
+        mov esi, [data]
+        mov edi, [pos]
+        call PutPlayerBehindPtr
+        add esp, 4
+    }
 }
 
 enum StatusChao : __int16 {
@@ -34,6 +34,7 @@ enum ChaoState : __int16 {
 
 enum ChaoLeashModes {
 	ChaoLeashMode_Disabled,
+	ChaoLeashMode_Free,
 	ChaoLeashMode_Held,
 	ChaoLeashMode_Fly
 };
@@ -95,13 +96,13 @@ ObjectFunc(UpdateSetDataAndDelete, 0x46C150);
 FunctionPointer(void, GetActiveCollisions, (float x, float y, float z, float radius), 0x43ACD0);
 FunctionPointer(int, GetGroundYPosition_CheckIntersection, (Mysterious64Bytes* a1, NJS_OBJECT* a2), 0x452B30);
 FunctionPointer(void, RunChaoBehaviour, (ObjectMaster* obj, void* func), 0x71EF10);
-ObjectFunc(sub_71EFB0, 0x71EFB0);
-ObjectFunc(sub_734EE0, 0x734EE0);
-ObjectFunc(sub_736140, 0x736140);
-ObjectFunc(sub_737610, 0x737610);
-ObjectFunc(sub_741F20, 0x741F20);
-ObjectFunc(sub_73FD10, 0x73FD10);
-ObjectFunc(sub_73FEF0, 0x73FEF0);
+ObjectFunc(Chao_RunMovements, 0x71EFB0);
+ObjectFunc(Chao_PlayAnimation, 0x734EE0);
+ObjectFunc(Chao_RunEmotionBall, 0x736140);
+ObjectFunc(Chao_RunActions, 0x737610);
+ObjectFunc(Chao_MoveEmotionBall, 0x741F20);
+ObjectFunc(Chao_RunPhysics, 0x73FD10);
+ObjectFunc(Chao_RunGravity, 0x73FEF0);
 
 ChaoData* GetChaoData(uint8_t id);
 

@@ -16,13 +16,13 @@ float Chao_GetAttackRange(ChaoData1* data1) {
 }
 
 NJS_VECTOR GetPlayerPoint(EntityData1* player) {
-	NJS_VECTOR dir = { -8, 9, 5 };
+	NJS_VECTOR dir = { -6, 7, 5 };
 	
 	if (player->CharID == Characters_Big) {
-		dir = { -14, 14, 7 };
+		dir = { -10, 14, 7 };
 	}
 	else if (player->CharID == Characters_Gamma) {
-		dir = { -10, 16, 6 };
+		dir = { -8, 16, 11 };
 	}
 	
 	return GetPointToFollow(&player->Position, &dir, &player->Rotation);
@@ -33,12 +33,12 @@ void FollowPlayer(ChaoData1* data1, EntityData1* player) {
 
 	float dist = GetDistance(&data1->entity.Position, &dest);
 
-	if (dist > 5.0f || njScalor2(&CharObj2Ptrs[player->CharIndex]->Speed) >= 0.2f) {
+	if (dist > 5.0f) {
 		njLookAt(&data1->entity.Position, &dest, &data1->entity.Rotation.x, &data1->entity.Rotation.y);
-		MoveForward(&data1->entity, Chao_GetFlightSpeed(data1) * (dist / 10));
+		MoveForward(&data1->entity, Chao_GetFlightSpeed(data1) * (dist / 8));
 		data1->entity.Rotation.x = 0;
 	}
-	else {
+	else if (CharObj2Ptrs[player->CharIndex]->Speed.x + CharObj2Ptrs[player->CharIndex]->Speed.y < 0.2f) {
 		data1->entity.NextAction = ChaoAct_IdlePlayer;
 	}
 }
@@ -48,7 +48,7 @@ void IdlePlayer(ChaoData1* data1, EntityData1* player) {
 
 	float dist = GetDistance(&data1->entity.Position, &dest);
 
-	if (dist < 7.0f && njScalor2(&CharObj2Ptrs[player->CharIndex]->Speed) < 0.2f) {
+	if (dist < 11.0f && CharObj2Ptrs[player->CharIndex]->Speed.x + CharObj2Ptrs[player->CharIndex]->Speed.y < 0.2f) {
 		data1->entity.Rotation.y += 0x200;
 		data1->entity.Rotation.x = 0;
 		MoveForward(&data1->entity, 0.1f);
@@ -110,7 +110,10 @@ void ChaoAttack(ObjectMaster* obj, ChaoData1* data1) {
 		data1->entity.Rotation.x = 0;
 
 		if (dist < 50.0f) {
-			Chao_AddToCollisionList(obj);
+			data1->entity.CollisionInfo->CollisionArray[2].field_3 = 0xE2;
+		}
+		else {
+			data1->entity.CollisionInfo->CollisionArray[2].field_3 = 0;
 		}
 	}
 	else {
@@ -124,10 +127,12 @@ void LevelChao_Fly(ObjectMaster* obj, ChaoData1* data1, ChaoData2* data2, Entity
 	case ChaoAct_FollowPlayer:
 		FollowPlayer(data1, player);
 		CheckForAttack(data1);
+		data1->entity.CollisionInfo->CollisionArray[2].field_3 = 0;
 		break;
 	case ChaoAct_IdlePlayer:
 		IdlePlayer(data1, player);
 		CheckForAttack(data1);
+		data1->entity.CollisionInfo->CollisionArray[2].field_3 = 0;
 		break;
 	case ChaoAct_Attack:
 		ChaoAttack(obj, data1);
@@ -139,22 +144,40 @@ void LevelChao_Fly(ObjectMaster* obj, ChaoData1* data1, ChaoData2* data2, Entity
 		Chao_Animation(obj, 289);
 	}
 
+	Chao_PlayAnimation(obj);
+	Chao_RunEmotionBall(obj);
+	Chao_MoveEmotionBall(obj);
+	Chao_RunPhysics(obj);
+
 	// Detach if Y is pressed
 	if (PressedButtons[data1->entity.CharIndex] & Buttons_Y) {
 		data1->entity.Status &= ~StatusChao_FlyPlayer;
-		SelectedChao[data1->entity.CharIndex].mode = ChaoLeashMode_Held;
+		SelectedChao[data1->entity.CharIndex].mode = ChaoLeashMode_Free;
 	}
 }
 
 void LevelChao_Normal(ObjectMaster* obj, ChaoData1* data1, ChaoData2* data2) {
-	sub_71EFB0(obj); // Movement
-	sub_73FEF0(obj); // Physics
-
+	Chao_RunMovements(obj);
+	Chao_PlayAnimation(obj);
+	Chao_RunEmotionBall(obj);
+	Chao_RunActions(obj);
+	Chao_MoveEmotionBall(obj);
+	
 	// Fly if Y is pressed
-	if (!(data1->entity.Status & StatusChao_Held) && PressedButtons[data1->entity.CharIndex] & Buttons_Y) {
-		data1->entity.Status |= StatusChao_FlyPlayer;
-		SelectedChao[data1->entity.CharIndex].mode = ChaoLeashMode_Fly;
+	if (!(data1->entity.Status & StatusChao_Held)) {
+		Chao_RunGravity(obj);
+		SelectedChao[data1->entity.CharIndex].mode = ChaoLeashMode_Free;
+
+		if (PressedButtons[data1->entity.CharIndex] & Buttons_Y) {
+			data1->entity.Status |= StatusChao_FlyPlayer;
+			SelectedChao[data1->entity.CharIndex].mode = ChaoLeashMode_Fly;
+		}
 	}
+	else {
+		SelectedChao[data1->entity.CharIndex].mode = ChaoLeashMode_Held;
+	}
+
+	Chao_RunPhysics(obj);
 }
 
 void SelectChao(ObjectMaster* chao) {
@@ -215,21 +238,14 @@ void __cdecl Chao_Main_r(ObjectMaster* obj) {
 		// Run custom actions
 		if (!(data1->entity.Status & StatusChao_FlyPlayer)) {
 			LevelChao_Normal(obj, data1, data2);
-
-			if (!(data1->entity.Status & StatusChao_Held)) {
-				Chao_AddToCollisionList(obj);
-			}
 		}
 		else {
 			LevelChao_Fly(obj, data1, data2, player);
 		}
 
-		// General physics and behaviour
-		sub_734EE0(obj);
-		sub_736140(obj);
-		sub_737610(obj);
-		sub_741F20(obj);
-		sub_73FD10(obj);
+		if (!(data1->entity.Status & StatusChao_Held)) {
+			Chao_AddToCollisionList(obj);
+		}
 
 		obj->DisplaySub(obj);
 		RunObjectChildren(obj);

@@ -58,19 +58,24 @@ void __cdecl CreateChao_Delayed(ObjectMaster* obj) {
 	DelayedChaoWK* wk = (DelayedChaoWK*)obj->UnknownB_ptr;
 
 	if (wk->timer > 1) {
+		EntityData1* player = EntityData1Ptrs[wk->id];
+		NJS_VECTOR pos = { 0, 0, 0 };
+
+		if (player && SelectedChao[wk->id].mode == ChaoLeashMode_Free) {
+			PutPlayerBehind(&pos, player, 5.0f);
+		}
+		
 		ChaoData* chaodata = GetChaoData(*(int*)obj->UnknownB_ptr);
-		ObjectMaster* chao = CreateChao(chaodata, 0, 0, nullptr, 0);
+		ObjectMaster* chao = CreateChao(chaodata, 0, 0, &pos, 0);
 		chao->Data1->CharIndex = wk->id;
 		SetChaoPowerups(wk->id, chaodata);
 
 		if (SelectedChao[wk->id].mode == ChaoLeashMode_Held) {
-			EntityData1* player = EntityData1Ptrs[wk->id];
-
 			if (player && !(player->Status & Status_HoldObject)) {
 				SetHeldObject(wk->id, chao);
 			}
 		}
-		else {
+		else if (SelectedChao[wk->id].mode == ChaoLeashMode_Fly) {
 			chao->Data1->Status |= StatusChao_FlyPlayer;
 		}
 
@@ -149,7 +154,7 @@ extern "C" {
 		
 #ifndef NDEBUG
 		SelectedChao[0].id = 0;
-		SelectedChao[0].mode = ChaoLeashMode_Held;
+		SelectedChao[0].mode = ChaoLeashMode_Fly;
 		SelectedChao[1].id = 13;
 		SelectedChao[1].mode = ChaoLeashMode_Held;
 #endif
