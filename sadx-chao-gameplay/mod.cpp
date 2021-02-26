@@ -1,71 +1,127 @@
 #include "stdafx.h"
 #include "mod.h"
 
-ChaoHandle	ChaoMaster;
+ChaoLeash SelectedChao[MaxPlayers]{};
+bool DrawHUDNext = false;
 
 bool ChaoPowerups = false;
 bool ChaoAssist = true;
 bool ChaoLuck = true;
 bool ChaoHUD = true;
 
-//Chao selection functions
+CollisionData ChaoLevelCol[] = {
+	{ 0x91, 1, 0x70, 0, 0x782008, { 0.0, 2.0, 0.0 }, { 4.0, 4.0, 0.0 }, 0, { 0 } },
+	{ 0x81, 0, 0x7, 0, 0x2400, { 0.0, 2.0, 0.0 }, { 1.5, 2.5, 0.69999999 }, 0, { 0 } },
+	{ 0x95, 0, 0x77, 0xE2, 0x400, { 0.0, 0.5, 0.0 }, { 1.0, 0.0, 0.0 }, 0, { 0 } },
+	{ 0, 0, 0x77, 0, 0, { 0.0, 1.5, 0.0 }, { 3.0, 0.0, 0.0 }, 0, { 0 } }
+};
+
+void ResetSelectedChao() {
+	foreach(i, SelectedChao) {
+		SelectedChao[i].mode = ChaoLeashMode_Disabled;
+	}
+}
+
+void LoadChaoFiles() {
+	LoadChaoTexlist("AL_DX_PARTS_TEX", (NJS_TEXLIST*)0x33A1340, 0);
+	LoadChaoTexlist("AL_BODY", ChaoTexLists, 0);
+	LoadChaoTexlist("AL_jewel", &ChaoTexLists[4], 0);
+	LoadChaoTexlist("AL_ICON", &ChaoTexLists[3], 0);
+	LoadChaoTexlist("AL_EYE", &ChaoTexLists[2], 0);
+	LoadChaoTexlist("AL_MOUTH", &ChaoTexLists[5], 0);
+	LoadChaoTexlist("AL_TEX_COMMON", &ChaoTexLists[1], 1u);
+
+	al_confirmload_load();
+	LoadChaoPVPs();
+
+	ChaoManager_Load();
+}
+
+void SetChaoPowerups(int id, ChaoData* chaodata) {
+	if (ChaoPowerups == true) {
+		CharObj2* co2 = CharObj2Ptrs[id];
+
+		if (co2) {
+			co2->PhysicsData.GroundAccel += static_cast<float>(min(99, chaodata->data.RunLevel)) / 90.0f;
+			co2->PhysicsData.JumpSpeed += static_cast<float>(min(99, chaodata->data.FlyLevel)) / 99.0f;
+			co2->PhysicsData.HSpeedCap += static_cast<float>(min(99, chaodata->data.StaminaLevel)) / 30.0f;
+			co2->PhysicsData.MaxAccel += static_cast<float>(min(99, chaodata->data.PowerLevel)) / 60.0f;
+		}
+	}
+}
+
 ChaoData* GetChaoData(uint8_t id) {
-	return (ChaoData *)(GetChaoSaveAddress() + 2072 + (2048 * id));
+	return (ChaoData*)(GetChaoSaveAddress() + 2072 + (2048 * id));
 }
 
-char GetChaoByPointer(ObjectMaster* chao) {
-	ChaoData1* chaodata = (ChaoData1*)chao->Data1;
+void __cdecl CreateChao_Delayed(ObjectMaster* obj) {
+	DelayedChaoWK* wk = (DelayedChaoWK*)obj->UnknownB_ptr;
 
-	if (!chaodata) return 0;
+	if (wk->timer > 1) {
+		ChaoData* chaodata = GetChaoData(*(int*)obj->UnknownB_ptr);
+		ObjectMaster* chao = CreateChao(chaodata, 0, 0, nullptr, 0);
+		chao->Data1->CharIndex = wk->id;
+		SetChaoPowerups(wk->id, chaodata);
 
-	for (uint8_t i = 0; i < 24; ++i) {
-		if (chaodata->ChaoDataBase_ptr == &GetChaoData(i)->data && chaodata->ChaoDataBase_ptr->Type != ChaoType_Egg) {
-			return i + 1;
+		if (SelectedChao[wk->id].mode == ChaoLeashMode_Held) {
+			EntityData1* player = EntityData1Ptrs[wk->id];
+
+			if (player && !(player->Status & Status_HoldObject)) {
+				SetHeldObject(wk->id, chao);
+			}
 		}
-	}
-
-	return 0;
-}
-
-void SelectChao(char player) {
-	CharObj2 * co2 = GetCharObj2(player);
-
-	if (!co2) return;
-
-	if (ChaoMaster.ChaoHandles[player].Chao &&
-		ChaoMaster.ChaoHandles[player].Handle->Data1->Action == ChaoAction_Flight) {
-		ChaoMaster.ChaoHandles[player].SelectedChao = GetChaoByPointer(ChaoMaster.ChaoHandles[player].Chao);
-		ChaoMaster.ChaoHandles[player].Carried = false;
-	}
-	else if (co2->ObjectHeld != nullptr) {
-		if (ChaoMaster.ChaoHandles[player].SelectedChao == NULL) {
-			ChaoMaster.ChaoHandles[player].SelectedChao = GetChaoByPointer(co2->ObjectHeld);
-			ChaoMaster.ChaoHandles[player].Carried = true;
-			if (CurrentLevel >= LevelIDs_SSGarden) ChaoMaster.LoadHUD = true;
+		else {
+			chao->Data1->Status |= StatusChao_FlyPlayer;
 		}
+
+		DeleteObject_(obj);
 	}
 	else {
-		ChaoMaster.ChaoHandles[player].SelectedChao = NULL;
+		wk->timer++;
 	}
 }
 
-//Add Chao to the enemies damage detection
-bool OhNoImDead2(EntityData1* a1, ObjectData2* a2);
-Trampoline OhNoImDead2_t(0x004CE030, 0x004CE036, OhNoImDead2);
-bool OhNoImDead2(EntityData1* a1, ObjectData2* a2) {
-	if (a1->CollisionInfo->CollidingObject) {
-		if (a1->CollisionInfo->CollidingObject->Object->MainSub == Chao_Main) 
-			return 1;
-	}
-	
-	FunctionPointer(bool, original, (EntityData1 * a1, ObjectData2 * a2), OhNoImDead2_t.Target());
-	return original(a1, a2);
+void LoadLevelChao(int id) {
+	DelayedChaoWK* wk = (DelayedChaoWK*)LoadObject(LoadObj_UnknownB, 0, CreateChao_Delayed)->UnknownB_ptr;
+	wk->id = id;
 }
 
-//Collision fix
+void __cdecl LoadLevel_r(ObjectMaster* obj);
+Trampoline LoadLevel_t((int)LoadLevel, (int)LoadLevel + 0x7, LoadLevel_r);
+void __cdecl LoadLevel_r(ObjectMaster* obj) {
+	TARGET_STATIC(LoadLevel)(obj);
+
+	// Load all chao
+	foreach(selection, SelectedChao) {
+		if (SelectedChao[selection].mode != ChaoLeashMode_Disabled) {
+			LoadLevelChao(selection);
+		}
+	}
+}
+
+void __cdecl InitLevel_r(ObjectMaster* obj);
+Trampoline InitLevel_t(0x415210, 0x415216, InitLevel_r);
+void __cdecl InitLevel_r(ObjectMaster* obj) {
+	TARGET_STATIC(InitLevel)(obj);
+
+	// Load chao stuff
+	foreach(selection, SelectedChao) {
+		if (SelectedChao[selection].mode != ChaoLeashMode_Disabled) {
+			LoadChaoFiles();
+
+			if (ChaoHUD && DrawHUDNext == true) {
+				LoadObject(LoadObj_Data1, 6, ChaoHud_Main);
+				DrawHUDNext = false;
+			}
+
+			break;
+		}
+	}
+}
+
 void __cdecl ChaoCollision_Init(ObjectMaster* obj, CollisionData* collisionArray, int count, unsigned __int8 list) {
-	if (CurrentLevel < LevelIDs_SSGarden || CurrentLevel > LevelIDs_ChaoRace) {
-		Collision_Init(obj, collisionArray, count, 4);
+	if (IsLevelChaoGarden() == false) {
+		Collision_Init(obj, arrayptrandlength(ChaoLevelCol), list);
 	}
 	else {
 		Collision_Init(obj, collisionArray, count, list);
@@ -75,136 +131,28 @@ void __cdecl ChaoCollision_Init(ObjectMaster* obj, CollisionData* collisionArray
 void LoadNextChaoStage_r();
 Trampoline LoadNextChaoStage_t((int)LoadNextChaoStage, (int)LoadNextChaoStage + 0x5, LoadNextChaoStage_r);
 void LoadNextChaoStage_r() {
-	for (char p = 0; p < 8; ++p) {
-		ChaoMaster.ChaoHandles[p].SelectedChao = 0;
-	}
-
-	ChaoMaster.ChaoLoaded = false;
-
-	VoidFunc(original, LoadNextChaoStage_t.Target());
-	original();
+	TARGET_STATIC(LoadNextChaoStage)();
+	ResetSelectedChao();
+	DrawHUDNext = true;
 }
 
-int GetCurrentChaoStage_r() {
-	if (CurrentLevel < LevelIDs_SSGarden) return 5;
-	else return CurrentChaoStage;
-}
-
-bool IsLevelChaoGarden_r() {
-	for (char p = 0; p < PLAYERCOUNT; ++p) {
-		if (ChaoMaster.ChaoHandles[p].Chao) return true;
-	}
-
-	if (CurrentLevel >= LevelIDs_SSGarden) {
-		return true;
-	}
-
-	return false;
-}
-
-extern "C"
-{
-	__declspec(dllexport) void __cdecl Init(const char *path)
-	{
+extern "C" {
+	__declspec(dllexport) void __cdecl Init(const char *path) {
 		const IniFile *config = new IniFile(std::string(path) + "\\config.ini");
 		ChaoPowerups = config->getBool("Functionalities", "EnablePowerups", false);
 		ChaoAssist = config->getBool("Functionalities", "EnableChaoAssist", true);
 		ChaoLuck = config->getBool("Functionalities", "EnableChaoLuck", true);
 		ChaoHUD = config->getBool("Functionalities", "EnableHUD", true);
 		delete config;
-		
-		//Trick the game into thinking we're in a specific chao garden
-		//Needed to change the water height
-		WriteJump(GetCurrentChaoStage, GetCurrentChaoStage_r);
 
 		WriteCall((void*)0x720781, ChaoCollision_Init);
-
-		//Allow whistle and petting
-		WriteCall((void*)0x442570, IsLevelChaoGarden_r);
-		WriteCall((void*)0x442680, IsLevelChaoGarden_r);
-	}
-
-	__declspec(dllexport) void __cdecl OnFrame()
-	{
-		//Check the held chao as the player leave the garden or field
-		//Use those as the selected chao
-		if (GameState == 9) {
-			if ((CurrentLevel >= LevelIDs_StationSquare && CurrentLevel <= LevelIDs_Past) || CurrentLevel >= LevelIDs_SSGarden) {
-				for (char p = 0; p < 8; ++p) {
-					SelectChao(p);
-				}
-			}
-
-			return;
-		}
-
-		//Tell the system we can reload Chao
-		if (GameState != 4 && GameState != 15 && GameState != 16) {
-			ChaoMaster.ChaoLoaded = false;
-
-			if (GameMode == GameModes_Menu) {
-				for (char p = 0; p < PLAYERCOUNT; ++p) {
-					ChaoMaster.ChaoHandles[p].SelectedChao = 0;
-				}
-			}
-
-			return;
-		}
-
-		//Load Chao at the beginning of levels or fields
-		if ((GameState == 4 || GameState == 2) && CurrentLevel < LevelIDs_SSGarden && ChaoMaster.ChaoLoaded == false) {
-			for (char p = 0; p < PLAYERCOUNT; ++p) {
-
+		
 #ifndef NDEBUG
-				if (p == 0 && ChaoMaster.ChaoHandles[0].SelectedChao == 0) ChaoMaster.ChaoHandles[p].SelectedChao = 1;
-				if (p == 1 && ChaoMaster.ChaoHandles[1].SelectedChao == 0) ChaoMaster.ChaoHandles[p].SelectedChao = 2;
+		SelectedChao[0].id = 0;
+		SelectedChao[0].mode = ChaoLeashMode_Held;
+		SelectedChao[1].id = 13;
+		SelectedChao[1].mode = ChaoLeashMode_Held;
 #endif
-
-				if (ChaoMaster.ChaoHandles[p].Handle) {
-					continue;
-				}
-
-				if (ChaoMaster.ChaoHandles[p].SelectedChao) {
-					if (!EntityData1Ptrs[p]) {
-						ChaoMaster.ChaoHandles[p].SelectedChao = 0;
-						ChaoMaster.LoadHUD = true;
-						continue;
-					}
-
-					ChaoMaster.ChaoHandles[p].Handle = LoadObject((LoadObj)(LoadObj_Data1), 1, ChaoObj_Main);
-					ChaoMaster.ChaoHandles[p].Handle->Data1->CharIndex = p;
-					ChaoMaster.ChaoLoaded = true;
-				}
-			}
-
-			//If at least one chao is loaded, load the common chao stuff
-			if (ChaoMaster.ChaoLoaded == true) {
-				//Load the chao textures
-				LoadChaoTexlist("AL_DX_PARTS_TEX", (NJS_TEXLIST*)0x33A1340, 0);
-				LoadChaoTexlist("AL_BODY", ChaoTexLists, 0);
-				LoadChaoTexlist("AL_jewel", &ChaoTexLists[4], 0);
-				LoadChaoTexlist("AL_ICON", &ChaoTexLists[3], 0);
-				LoadChaoTexlist("AL_EYE", &ChaoTexLists[2], 0);
-				LoadChaoTexlist("AL_MOUTH", &ChaoTexLists[5], 0);
-				LoadChaoTexlist("AL_TEX_COMMON", &ChaoTexLists[1], 1u);
-
-				//PVPs only need to be loaded once
-				if (!ChaoMaster.FileLoaded) {
-					al_confirmload_load();
-					LoadChaoPVPs();
-					ChaoMaster.FileLoaded = true;
-				}
-
-				ChaoManager_Load(); //Load chao behaviour
-
-				if (ChaoHUD && ChaoMaster.LoadHUD == true) {
-					LoadObject(LoadObj_Data1, 6, ChaoHud_Main);
-				}
-			}
-
-			ChaoMaster.ChaoLoaded = true;
-			ChaoMaster.LoadHUD = false;
-		}
 	}
 
 	__declspec(dllexport) ModInfo SADXModInfo = { ModLoaderVer };

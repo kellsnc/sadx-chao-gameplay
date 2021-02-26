@@ -11,7 +11,7 @@ void CalculateScreenPos(NJS_QUAD_TEXTURE* quad, float p1, float p2, float s1, fl
 	quad->y2 = quad->y1 + VerticalStretch * s2;
 }
 
-void ChaoHud_DrawSprite(char player, char chao, float alpha) {
+void ChaoHud_DrawSprite(int player, int chao, float alpha) {
 	NJS_QUAD_TEXTURE Sprite = { 0, 0, 0, 0, 0, 0, 1, 1 };
 
 	CalculateScreenPos(&Sprite, 11, 140 + (player * 45), 40, 40);
@@ -24,13 +24,14 @@ void ChaoHud_DrawSprite(char player, char chao, float alpha) {
 		NJS_COLOR color = { 0xFFFFFFFF };
 		color.argb.a = alpha;
 		SetHudColorAndTextureNum(0, color);
+		
 		DrawRectPoints((NJS_POINT2*)&Sprite, 1);
 		
 		CalculateScreenPos(&Sprite, 21, 150 + (player * 45), 20, 20);
 		SetHudColorAndTextureNum(2 + player, color);
 		DrawRectPoints((NJS_POINT2*)&Sprite, 1);
 		
-		if (chao == 0) {
+		if (chao == -1) {
 			CalculateScreenPos(&Sprite, 11, 140 + (player * 45), 40, 40);
 			SetHudColorAndTextureNum(1, color);
 			DrawRectPoints((NJS_POINT2*)&Sprite, 1);
@@ -60,7 +61,7 @@ void ChaoHud_Main(ObjectMaster* obj) {
 		}
 	}
 
-	for (char p = 0; p < PLAYERCOUNT; ++p) {
-		ChaoHud_DrawSprite(p, ChaoMaster.ChaoHandles[p].SelectedChao, data->CharID);
+	for (char p = 0; p < MaxPlayers; ++p) {
+		ChaoHud_DrawSprite(p, SelectedChao[p].mode != ChaoLeashMode_Disabled ? SelectedChao[p].id : -1, data->CharID);
 	}
 }

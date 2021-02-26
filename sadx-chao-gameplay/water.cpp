@@ -1,43 +1,72 @@
 #include "stdafx.h"
 #include "mod.h"
 
-//Get the water collision directly above the chao
-void IsChaoInWater(ObjectMaster* obj) {
-	ChaoData1* chaodata1 = (ChaoData1*)obj->Data1;
+bool IsChaoInWater(ChaoData1* chaodata1, ChaoData2_* chaodata2) {
+	Mysterious64Bytes colthing;
+	colthing.Position = { chaodata1->entity.Position.x, chaodata1->entity.Position.y - 1.0f, chaodata1->entity.Position.z };
 
-	WriteData<5>((void*)0x49F201, 0x90);
-	WriteData<5>((void*)0x49F1C0, 0x90);
-	WriteData<5>((void*)0x49F43D, 0x90);
+	// Get all collisions within a radius
+	GetActiveCollisions(colthing.Position.x, colthing.Position.y, colthing.Position.z, 200.0f);
+	float max = 10000000.0f;
+	int top_flags = 0;
 
-	struct_a3 dyncolinfo;
-	float height = -10000000;
-	RunEntityIntersections(&chaodata1->entity, &dyncolinfo);
+	// For all found collisions
+	if (DynamicCOLCount_B > 0) {
+		for (int i = 0; i < DynamicCOLCount_B; ++i) {
+			DynamicCOL* col = &DynamicCOLArray_LandTable[i];
 
-	if (dyncolinfo.ColFlagsA & (0x400002 | ColFlags_Water)) {
-		if (dyncolinfo.DistanceMin > -1000000) height = dyncolinfo.DistanceMin + 1;
+			// Check if the collision is above, then only save if the lowest ever found
+			if (GetGroundYPosition_CheckIntersection(&colthing, col->Model)) {
+				if (colthing.struct_v3_b.SomeFlag == 1
+					&& colthing.Position.y < colthing.struct_v3_b.Distance
+					&& colthing.struct_v3_b.Distance < max) {
+					max = colthing.struct_v3_b.Distance;
+					top_flags = col->Flags;
+				}
+			}
+		}
 	}
-	else {
-		chaodata1->entity.Position.y += 10;
-		RunEntityIntersections(&chaodata1->entity, &dyncolinfo);
-		chaodata1->entity.Position.y -= 10;
+
+	// If the collision directly above is water
+	if (top_flags & (0x400002 | ColFlags_Water)) {
+		chaodata2->WaterHeight = max;
+		return true;
 	}
 
-	WriteCall((void*)0x49F201, SpawnRipples);
-	WriteCall((void*)0x49F1C0, SpawnSplashParticles);
-	WriteCall((void*)0x49F43D,  (ObjectFuncPtr)0x49F0B0); //DrawCharacterShadow
-
-	WriteData((float*)0x73C24C, height);
+	return false;
 }
 
-//Different water height for each chao in levels to swim in any water collision.
-//Don't check if held or following player.
-void Chao_Main_r(ObjectMaster* obj);
-Trampoline Chao_Main_t((int)Chao_Main, (int)Chao_Main + 0x6, Chao_Main_r);
-void Chao_Main_r(ObjectMaster* obj) {
-	if (CurrentLevel < LevelIDs_SSGarden && (obj->Data1->Status & 0x1000) == 0 && obj->Data1->CharIndex != 1) {
-		IsChaoInWater(obj);
+signed int __cdecl Chao_DetectWater_r(ObjectMaster* obj);
+Trampoline Chao_DetectWater_t(0x73C200, 0x73C207, Chao_DetectWater_r);
+signed int __cdecl Chao_DetectWater_r(ObjectMaster* obj) {
+	ChaoData1* data1 = (ChaoData1*)obj->Data1;
+	ChaoData2_* data2 = (ChaoData2_*)obj->Data2;
+
+	__int16 state = data1->unknown_d[0].field_0;
+	bool result = false;
+
+	if (data1->entity.Status & StatusChao_Held) {
+		state &= ~ChaoState_Unk1;
+	}
+	else {
+		if (IsChaoInWater(data1, data2)) {
+			if (!(state & ChaoState_Unk1)) {
+				state |= ChaoState_Unk1;
+				RunChaoBehaviour(obj, (void*)0x73C110);
+			}
+
+			if (data2->field_4.y < 0.0f) {
+				data2->field_4.y = data2->field_4.y * 0.1f;
+			}
+
+			state |= ChaoState_Water;
+			result = true;
+		}
+		else {
+			state &= ~(ChaoState_Water | ChaoState_Unk1);
+		}
 	}
 
-	ObjectFunc(original, Chao_Main_t.Target());
-	original(obj);
+	data1->unknown_d[0].field_0 = state;
+	return result;
 }
