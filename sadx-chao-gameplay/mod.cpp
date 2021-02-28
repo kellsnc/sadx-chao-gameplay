@@ -2,12 +2,18 @@
 #include "mod.h"
 
 ChaoLeash SelectedChao[MaxPlayers]{};
-bool DrawHUDNext = false;
+
+static bool DrawHUDNext = false;
 
 bool ChaoPowerups = false;
 bool ChaoAssist = true;
 bool ChaoLuck = true;
 bool ChaoHUD = true;
+
+struct DelayedChaoWK {
+	int id;
+	int timer;
+};
 
 CollisionData ChaoLevelCol[] = {
 	{ 0x91, 1, 0x70, 0, 0x782008, { 0.0, 2.0, 0.0 }, { 4.0, 4.0, 0.0 }, 0, { 0 } },

@@ -34,7 +34,7 @@ void FollowPlayer(ChaoData1* data1, EntityData1* player) {
 	float dist = GetDistance(&data1->entity.Position, &dest);
 
 	if (dist > 5.0f) {
-		njLookAt(&data1->entity.Position, &dest, &data1->entity.Rotation.x, &data1->entity.Rotation.y);
+		LookAt(&data1->entity.Position, &dest, &data1->entity.Rotation.x, &data1->entity.Rotation.y);
 		MoveForward(&data1->entity, Chao_GetFlightSpeed(data1) * (dist / 8));
 		data1->entity.Rotation.x = 0;
 	}
@@ -67,7 +67,6 @@ HomingAttackTarget GetClosestAttack(NJS_VECTOR* pos) {
 		float dist = GetDistance(pos, &target_->entity->Position);
 
 		if (dist < target.distance && target_->entity &&
-			target_->entity->CollisionInfo->List == 3 &&
 			target_->entity->CollisionInfo->Object->Data2 != nullptr) {
 			target.distance = dist;
 			target.entity = target_->entity;
@@ -105,7 +104,7 @@ void ChaoAttack(ObjectMaster* obj, ChaoData1* data1) {
 
 	if (target.entity && target.distance < Chao_GetAttackRange(data1)) {
 		float dist = GetDistance(&data1->entity.Position, &target.entity->Position) + 30.0f;
-		njLookAt(&data1->entity.Position, &target.entity->Position, &data1->entity.Rotation.x, &data1->entity.Rotation.y);
+		LookAt(&data1->entity.Position, &target.entity->Position, &data1->entity.Rotation.x, &data1->entity.Rotation.y);
 		MoveForward(&data1->entity, Chao_GetFlightSpeed(data1) * (dist / 10));
 		data1->entity.Rotation.x = 0;
 

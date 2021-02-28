@@ -4,24 +4,12 @@
 #define TARGET_STATIC(name) ((decltype(name##_r)*)name##_t.Target())
 #define foreach(item, items) for (int item = 0; item < LengthOfArray(items); ++item)
 
-//void __usercall PutPlayerBehind(NJS_VECTOR* pos@<edi>, EntityData1* data@<esi>, float dist)
-static const void* const PutPlayerBehindPtr = (void*)0x47DD50;
-static inline void PutPlayerBehind(NJS_VECTOR* pos, EntityData1* data, float dist)
-{
-    __asm
-    {
-        push[dist]
-        mov esi, [data]
-        mov edi, [pos]
-        call PutPlayerBehindPtr
-        add esp, 4
-    }
-}
+static constexpr int MaxPlayers = 4;
 
 enum StatusChao : __int16 {
 	StatusChao_Held = 0x1000,
 
-	// Custom ones
+	// Custom ones:
 	StatusChao_Selected = 0x100,
 	StatusChao_FlyPlayer = 0x2000,
 	StatusChao_Attacked = 0x4000
@@ -39,18 +27,12 @@ enum ChaoLeashModes {
 	ChaoLeashMode_Fly
 };
 
-struct DelayedChaoWK {
-	int id;
-	int timer;
-};
-
 struct ChaoLeash {
 	ChaoLeashModes mode;
 	unsigned int id;
 };
 
-struct ChaoData2_
-{
+struct ChaoData2_ {
 	char gap0[4];
 	NJS_VECTOR field_4;
 	NJS_VECTOR field_10;
@@ -84,10 +66,14 @@ struct ChaoData2_
 	char field_26B;
 };
 
-static constexpr int MaxPlayers = 4;
 extern ChaoLeash SelectedChao[MaxPlayers];
+extern bool ChaoPowerups;
+extern bool ChaoAssist;
+extern bool ChaoLuck;
 
 bool IsChaoInWater(ChaoData1* chaodata1, ChaoData2_* chaodata2);
+void ChaoHud_Main(ObjectMaster* obj);
+ChaoData* GetChaoData(uint8_t id);
 
 FunctionPointer(int, Chao_Animation, (ObjectMaster* a1, int a2), 0x734F00);
 FunctionPointer(bool, Chao_FinishedAnimation, (ObjectMaster* a1), 0x735040);
@@ -96,6 +82,7 @@ ObjectFunc(UpdateSetDataAndDelete, 0x46C150);
 FunctionPointer(void, GetActiveCollisions, (float x, float y, float z, float radius), 0x43ACD0);
 FunctionPointer(int, GetGroundYPosition_CheckIntersection, (Mysterious64Bytes* a1, NJS_OBJECT* a2), 0x452B30);
 FunctionPointer(void, RunChaoBehaviour, (ObjectMaster* obj, void* func), 0x71EF10);
+
 ObjectFunc(Chao_RunMovements, 0x71EFB0);
 ObjectFunc(Chao_PlayAnimation, 0x734EE0);
 ObjectFunc(Chao_RunEmotionBall, 0x736140);
@@ -104,17 +91,22 @@ ObjectFunc(Chao_MoveEmotionBall, 0x741F20);
 ObjectFunc(Chao_RunPhysics, 0x73FD10);
 ObjectFunc(Chao_RunGravity, 0x73FEF0);
 
-ChaoData* GetChaoData(uint8_t id);
-
-extern bool ChaoPowerups;
-extern bool ChaoAssist;
-extern bool ChaoLuck;
-
 float GetDistance(NJS_VECTOR* orig, NJS_VECTOR* dest);
 NJS_VECTOR GetPointToFollow(NJS_VECTOR* pos, NJS_VECTOR* dir, Rotation3* rot);
-bool IsPlayerHoldingChao(char player, ChaoData1* chao);
-void njLookAt(NJS_VECTOR* from, NJS_VECTOR* to, Angle* outx, Angle* outy);
+void LookAt(NJS_VECTOR* from, NJS_VECTOR* to, Angle* outx, Angle* outy);
 void MoveForward(EntityData1* entity, float speed);
 int GetChaoByPointer(ObjectMaster* chao);
 
-void ChaoHud_Main(ObjectMaster* obj);
+//void __usercall PutPlayerBehind(NJS_VECTOR* pos@<edi>, EntityData1* data@<esi>, float dist)
+static const void* const PutPlayerBehindPtr = (void*)0x47DD50;
+static inline void PutPlayerBehind(NJS_VECTOR* pos, EntityData1* data, float dist)
+{
+	__asm
+	{
+		push[dist]
+		mov esi, [data]
+		mov edi, [pos]
+		call PutPlayerBehindPtr
+		add esp, 4
+	}
+}

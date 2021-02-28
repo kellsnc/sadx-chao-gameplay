@@ -39,7 +39,7 @@ bool IsPlayerHoldingChao(char player, ChaoData1* chao) {
 	return false;
 }
 
-void njLookAt(NJS_VECTOR* from, NJS_VECTOR* to, Angle* outx, Angle* outy) {
+void LookAt(NJS_VECTOR* from, NJS_VECTOR* to, Angle* outx, Angle* outy) {
 	NJS_VECTOR unit = *to;
 	
 	njSubVector(&unit, from);
