@@ -10,7 +10,6 @@ enum StatusChao : __int16 {
 	StatusChao_Held = 0x1000,
 
 	// Custom ones:
-	StatusChao_Selected = 0x100,
 	StatusChao_FlyPlayer = 0x2000,
 	StatusChao_Attacked = 0x4000
 };
@@ -73,7 +72,6 @@ extern bool ChaoLuck;
 
 bool IsChaoInWater(ChaoData1* chaodata1, ChaoData2_* chaodata2);
 void ChaoHud_Main(ObjectMaster* obj);
-ChaoData* GetChaoData(uint8_t id);
 
 FunctionPointer(int, Chao_Animation, (ObjectMaster* a1, int a2), 0x734F00);
 FunctionPointer(bool, Chao_FinishedAnimation, (ObjectMaster* a1), 0x735040);
@@ -95,7 +93,6 @@ float GetDistance(NJS_VECTOR* orig, NJS_VECTOR* dest);
 NJS_VECTOR GetPointToFollow(NJS_VECTOR* pos, NJS_VECTOR* dir, Rotation3* rot);
 void LookAt(NJS_VECTOR* from, NJS_VECTOR* to, Angle* outx, Angle* outy);
 void MoveForward(EntityData1* entity, float speed);
-int GetChaoByPointer(ObjectMaster* chao);
 
 //void __usercall PutPlayerBehind(NJS_VECTOR* pos@<edi>, EntityData1* data@<esi>, float dist)
 static const void* const PutPlayerBehindPtr = (void*)0x47DD50;

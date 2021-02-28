@@ -12,6 +12,7 @@ bool ChaoHUD = true;
 
 struct DelayedChaoWK {
 	int id;
+	int player;
 	int timer;
 };
 
@@ -60,32 +61,49 @@ void SetChaoPowerups(int id, ChaoData* chaodata) {
 	}
 }
 
-ChaoData* GetChaoData(uint8_t id) {
+ChaoData* GetChaoData(int id) {
 	return (ChaoData*)(GetChaoSaveAddress() + 2072 + (2048 * id));
+}
+
+int GetHeldChao(int player) {
+	EntityData1* data = EntityData1Ptrs[player];
+	CharObj2* co2 = CharObj2Ptrs[player];
+
+	if (co2 && co2->ObjectHeld && co2->ObjectHeld->Data1) {
+		ChaoData1* chaodata = (ChaoData1*)co2->ObjectHeld->Data1;
+
+		for (uint8_t i = 0; i < 24; ++i) {
+			if (chaodata->ChaoDataBase_ptr == &GetChaoData(i)->data && chaodata->ChaoDataBase_ptr->Type != ChaoType_Egg) {
+				return i;
+			}
+		}
+	}
+
+	return -1;
 }
 
 void __cdecl CreateChao_Delayed(ObjectMaster* obj) {
 	DelayedChaoWK* wk = (DelayedChaoWK*)obj->UnknownB_ptr;
 
 	if (wk->timer > 1) {
-		EntityData1* player = EntityData1Ptrs[wk->id];
+		EntityData1* player = EntityData1Ptrs[wk->player];
 		NJS_VECTOR pos = { 0, 0, 0 };
 
-		if (player && SelectedChao[wk->id].mode == ChaoLeashMode_Free) {
+		if (player && SelectedChao[wk->player].mode == ChaoLeashMode_Free) {
 			PutPlayerBehind(&pos, player, 5.0f);
 		}
 		
-		ChaoData* chaodata = GetChaoData(*(int*)obj->UnknownB_ptr);
+		ChaoData* chaodata = GetChaoData(wk->id);
 		ObjectMaster* chao = CreateChao(chaodata, 0, 0, &pos, 0);
-		chao->Data1->CharIndex = wk->id;
-		SetChaoPowerups(wk->id, chaodata);
+		chao->Data1->CharIndex = wk->player;
+		SetChaoPowerups(wk->player, chaodata);
 
-		if (SelectedChao[wk->id].mode == ChaoLeashMode_Held) {
+		if (SelectedChao[wk->player].mode == ChaoLeashMode_Held) {
 			if (player && !(player->Status & Status_HoldObject)) {
-				SetHeldObject(wk->id, chao);
+				SetHeldObject(wk->player, chao);
 			}
 		}
-		else if (SelectedChao[wk->id].mode == ChaoLeashMode_Fly) {
+		else if (SelectedChao[wk->player].mode == ChaoLeashMode_Fly) {
 			chao->Data1->Status |= StatusChao_FlyPlayer;
 		}
 
@@ -96,9 +114,10 @@ void __cdecl CreateChao_Delayed(ObjectMaster* obj) {
 	}
 }
 
-void LoadLevelChao(int id) {
+void LoadLevelChao(int id, int player) {
 	DelayedChaoWK* wk = (DelayedChaoWK*)LoadObject(LoadObj_UnknownB, 0, CreateChao_Delayed)->UnknownB_ptr;
 	wk->id = id;
+	wk->player = player;
 }
 
 void __cdecl LoadLevel_r(ObjectMaster* obj);
@@ -107,9 +126,11 @@ void __cdecl LoadLevel_r(ObjectMaster* obj) {
 	TARGET_STATIC(LoadLevel)(obj);
 
 	// Load all chao
-	foreach(selection, SelectedChao) {
-		if (SelectedChao[selection].mode != ChaoLeashMode_Disabled) {
-			LoadLevelChao(selection);
+	if (IsLevelChaoGarden() == false) {
+		foreach(selection, SelectedChao) {
+			if (SelectedChao[selection].mode != ChaoLeashMode_Disabled) {
+				LoadLevelChao(SelectedChao[selection].id, selection);
+			}
 		}
 	}
 }
@@ -120,18 +141,41 @@ void __cdecl InitLevel_r(ObjectMaster* obj) {
 	TARGET_STATIC(InitLevel)(obj);
 
 	// Load chao stuff
-	foreach(selection, SelectedChao) {
-		if (SelectedChao[selection].mode != ChaoLeashMode_Disabled) {
-			LoadChaoFiles();
+	if (IsLevelChaoGarden() == false) {
+		foreach(selection, SelectedChao) {
+			if (SelectedChao[selection].mode != ChaoLeashMode_Disabled) {
+				LoadChaoFiles();
 
-			if (ChaoHUD && DrawHUDNext == true) {
-				LoadObject(LoadObj_Data1, 6, ChaoHud_Main);
-				DrawHUDNext = false;
+				if (ChaoHUD && DrawHUDNext == true) {
+					LoadObject(LoadObj_Data1, 6, ChaoHud_Main);
+					DrawHUDNext = false;
+				}
+
+				break;
 			}
-
-			break;
 		}
 	}
+}
+
+void SelectChao() {
+	for (int i = 0; i < MaxPlayers; ++i) {
+		int id = GetHeldChao(i);
+
+		if (id >= 0) {
+			SelectedChao[i].id = id;
+			SelectedChao[i].mode = ChaoLeashMode_Held;
+		}
+	}
+}
+
+void __cdecl Chao_LeaveGarden_r(int level, int act);
+Trampoline Chao_LeaveGarden_t(0x715730, 0x715735, Chao_LeaveGarden_r);
+void __cdecl Chao_LeaveGarden_r(int level, int act) {
+	ResetSelectedChao();
+	SelectChao();
+	DrawHUDNext = true;
+
+	TARGET_STATIC(Chao_LeaveGarden)(level, act);
 }
 
 void __cdecl ChaoCollision_Init(ObjectMaster* obj, CollisionData* collisionArray, int count, unsigned __int8 list) {
@@ -141,14 +185,6 @@ void __cdecl ChaoCollision_Init(ObjectMaster* obj, CollisionData* collisionArray
 	else {
 		Collision_Init(obj, collisionArray, count, list);
 	}
-}
-
-void LoadNextChaoStage_r();
-Trampoline LoadNextChaoStage_t((int)LoadNextChaoStage, (int)LoadNextChaoStage + 0x5, LoadNextChaoStage_r);
-void LoadNextChaoStage_r() {
-	TARGET_STATIC(LoadNextChaoStage)();
-	ResetSelectedChao();
-	DrawHUDNext = true;
 }
 
 bool IsLevelChaoGarden_r() {
@@ -183,7 +219,7 @@ extern "C" {
 #ifndef NDEBUG
 		SelectedChao[0].id = 0;
 		SelectedChao[0].mode = ChaoLeashMode_Fly;
-		SelectedChao[1].id = 13;
+		SelectedChao[1].id = 12;
 		SelectedChao[1].mode = ChaoLeashMode_Held;
 #endif
 	}

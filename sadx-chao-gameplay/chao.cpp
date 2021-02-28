@@ -179,46 +179,6 @@ void LevelChao_Normal(ObjectMaster* obj, ChaoData1* data1, ChaoData2* data2) {
 	Chao_RunPhysics(obj);
 }
 
-void SelectChao(ObjectMaster* chao) {
-	for (int i = 0; i < MaxPlayers; ++i) {
-		CharObj2* co2 = CharObj2Ptrs[i];
-
-		if (co2) {
-			ObjectMaster* held = co2->ObjectHeld;
-
-			if (held == chao) {
-				SelectedChao[i].id = GetChaoByPointer(held);
-				SelectedChao[i].mode = ChaoLeashMode_Held;
-			}
-		}
-	}
-}
-
-void UnselectChao(ObjectMaster* chao) {
-	int id = GetChaoByPointer(chao);
-
-	foreach(i, SelectedChao) {
-		if (SelectedChao[i].mode != ChaoLeashMode_Disabled && SelectedChao[i].id == id) {
-			SelectedChao[i].mode = ChaoLeashMode_Disabled;
-		}
-	}
-}
-
-void Chao_RunSelection(ObjectMaster* obj, ChaoData1* data1) {
-	if (data1->entity.Status & StatusChao_Held) {
-		if (!(data1->entity.Status & StatusChao_Selected)) {
-			SelectChao(obj); // Select the current chao for the holding player
-			data1->entity.Status |= StatusChao_Selected;
-		}
-	}
-	else {
-		if (data1->entity.Status & StatusChao_Selected) {
-			UnselectChao(obj); // Remove the chao if put down
-			data1->entity.Status &= ~StatusChao_Selected;
-		}
-	}
-}
-
 void __cdecl Chao_Main_r(ObjectMaster* obj);
 Trampoline Chao_Main_t((int)Chao_Main, (int)Chao_Main + 0x6, Chao_Main_r);
 void __cdecl Chao_Main_r(ObjectMaster* obj) {
@@ -250,7 +210,6 @@ void __cdecl Chao_Main_r(ObjectMaster* obj) {
 		RunObjectChildren(obj);
 	}
 	else {
-		Chao_RunSelection(obj, data1); // if in garden, select chao by holding it
 		TARGET_STATIC(Chao_Main)(obj);
 	}
 }
@@ -263,7 +222,7 @@ void Chao_CheckLuck(ChaoData1* chaodata) {
 			int grade = 2;
 			while (1) {
 				if (chaodata->ChaoDataBase_ptr->LuckyGrade >= grade) {
-					if (rand() % grade == 0) {
+					if (rand() % (grade * 2) == 0) {
 						SpawnAnimal(2, chaodata->entity.Position.x, chaodata->entity.Position.y, chaodata->entity.Position.z);
 						grade += 1;
 						continue;

@@ -25,20 +25,6 @@ void MoveForward(EntityData1* entity, float speed) {
 	njPopMatrix(1u);
 }
 
-bool IsPlayerHoldingChao(char player, ChaoData1* chao) {
-	EntityData1* data = EntityData1Ptrs[player];
-	CharObj2* co2 = CharObj2Ptrs[player];
-
-	if (co2->ObjectHeld && co2->ObjectHeld->Data1) {
-		ChaoData1* chaodata = (ChaoData1*)co2->ObjectHeld->Data1;
-		if (chaodata->ChaoDataBase_ptr == chao->ChaoDataBase_ptr) {
-			return true;
-		}
-	}
-
-	return false;
-}
-
 void LookAt(NJS_VECTOR* from, NJS_VECTOR* to, Angle* outx, Angle* outy) {
 	NJS_VECTOR unit = *to;
 	
@@ -59,18 +45,4 @@ void LookAt(NJS_VECTOR* from, NJS_VECTOR* to, Angle* outx, Angle* outy) {
 				- (acos(-(len * unit.y)) * 65536.0f * 0.1591549762031479f));
 		}
 	}
-}
-
-int GetChaoByPointer(ObjectMaster* chao) {
-	ChaoData1* chaodata = (ChaoData1*)chao->Data1;
-
-	if (!chaodata) return 0;
-
-	for (uint8_t i = 0; i < 24; ++i) {
-		if (chaodata->ChaoDataBase_ptr == &GetChaoData(i)->data && chaodata->ChaoDataBase_ptr->Type != ChaoType_Egg) {
-			return i + 1;
-		}
-	}
-
-	return 0;
 }
