@@ -61,19 +61,21 @@ void IdlePlayer(ChaoData1* data1, EntityData1* player) {
 HomingAttackTarget GetClosestAttack(NJS_VECTOR* pos) {
 	HomingAttackTarget target = { 0, 1000000.0f };
 
-	for (int i = 0; i < HomingAttackTarget_Sonic_Index; ++i) {
-		HomingAttackTarget* target_ = &HomingAttackTarget_Sonic[i];
+	if (CurrentLevel < LevelIDs_Chaos0 || CurrentLevel > LevelIDs_ChaoRace) {
+		for (int i = 0; i < HomingAttackTarget_Sonic_Index; ++i) {
+			HomingAttackTarget* target_ = &HomingAttackTarget_Sonic[i];
 
-		float dist = GetDistance(pos, &target_->entity->Position);
+			float dist = GetDistance(pos, &target_->entity->Position);
 
-		if (dist < target.distance && target_->entity && 
-			target_->entity->CollisionInfo->List == 3 &&
-			target_->entity->CollisionInfo->Object->Data2 != nullptr) {
-			target.distance = dist;
-			target.entity = target_->entity;
+			if (dist < target.distance && target_->entity &&
+				target_->entity->CollisionInfo->List == 3 &&
+				target_->entity->CollisionInfo->Object->Data2 != nullptr) {
+				target.distance = dist;
+				target.entity = target_->entity;
+			}
 		}
 	}
-
+	
 	return target;
 }
 
