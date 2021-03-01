@@ -9,6 +9,8 @@ NJS_VECTOR GetPointToFollow(NJS_VECTOR* pos, NJS_VECTOR* dir, Rotation3* rot) {
 	NJS_VECTOR point;
 	njPushMatrix(_nj_unit_matrix_);
 	njTranslateV(0, pos);
+	njRotateZ(0, rot->z);
+	njRotateX(0, rot->x);
 	njRotateY(0, -rot->y);
 	njCalcPoint(0, dir, &point);
 	njPopMatrix(1u);

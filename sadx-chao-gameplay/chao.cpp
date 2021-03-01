@@ -66,7 +66,8 @@ HomingAttackTarget GetClosestAttack(NJS_VECTOR* pos) {
 
 		float dist = GetDistance(pos, &target_->entity->Position);
 
-		if (dist < target.distance && target_->entity &&
+		if (dist < target.distance && target_->entity && 
+			target_->entity->CollisionInfo->List == 3 &&
 			target_->entity->CollisionInfo->Object->Data2 != nullptr) {
 			target.distance = dist;
 			target.entity = target_->entity;
