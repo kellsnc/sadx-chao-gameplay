@@ -137,16 +137,21 @@ void __cdecl LoadLevel_r(ObjectMaster* obj) {
 
 void __cdecl InitLevel_r(ObjectMaster* obj);
 Trampoline InitLevel_t(0x415210, 0x415216, InitLevel_r);
-void __cdecl InitLevel_r(ObjectMaster* obj) {
+void __cdecl InitLevel_r(ObjectMaster* obj)
+{
 	TARGET_STATIC(InitLevel)(obj);
 
 	// Load chao stuff
-	if (IsLevelChaoGarden() == false) {
-		foreach(selection, SelectedChao) {
-			if (SelectedChao[selection].mode != ChaoLeashMode_Disabled) {
+	if (IsLevelChaoGarden() == false)
+	{
+		foreach(selection, SelectedChao)
+		{
+			if (SelectedChao[selection].mode != ChaoLeashMode_Disabled)
+			{
 				LoadChaoFiles();
 
-				if (ChaoHUD && DrawHUDNext == true) {
+				if (ChaoHUD && DrawHUDNext == true)
+				{
 					LoadObject(LoadObj_Data1, 6, ChaoHud_Main);
 					DrawHUDNext = false;
 				}
@@ -157,11 +162,14 @@ void __cdecl InitLevel_r(ObjectMaster* obj) {
 	}
 }
 
-void SelectChao() {
-	for (int i = 0; i < MaxPlayers; ++i) {
+void SelectChao()
+{
+	for (int i = 0; i < MaxPlayers; ++i)
+	{
 		int id = GetHeldChao(i);
 
-		if (id >= 0) {
+		if (id >= 0)
+		{
 			SelectedChao[i].id = id;
 			SelectedChao[i].mode = ChaoLeashMode_Held;
 		}
@@ -170,7 +178,8 @@ void SelectChao() {
 
 void __cdecl Chao_LeaveGarden_r(int level, int act);
 Trampoline Chao_LeaveGarden_t(0x715730, 0x715735, Chao_LeaveGarden_r);
-void __cdecl Chao_LeaveGarden_r(int level, int act) {
+void __cdecl Chao_LeaveGarden_r(int level, int act)
+{
 	ResetSelectedChao();
 	SelectChao();
 	DrawHUDNext = true;
@@ -178,23 +187,30 @@ void __cdecl Chao_LeaveGarden_r(int level, int act) {
 	TARGET_STATIC(Chao_LeaveGarden)(level, act);
 }
 
-void __cdecl ChaoCollision_Init(ObjectMaster* obj, CollisionData* collisionArray, int count, unsigned __int8 list) {
-	if (IsLevelChaoGarden() == false) {
+void __cdecl ChaoCollision_Init(ObjectMaster* obj, CollisionData* collisionArray, int count, unsigned __int8 list)
+{
+	if (IsLevelChaoGarden() == false)
+	{
 		Collision_Init(obj, arrayptrandlength(ChaoLevelCol), list);
 	}
-	else {
+	else
+	{
 		Collision_Init(obj, collisionArray, count, list);
 	}
 }
 
-bool IsLevelChaoGarden_r() {
-	foreach(i, SelectedChao) {
-		if (SelectedChao[i].id != ChaoLeashMode_Disabled) {
+bool IsLevelChaoGarden_r()
+{
+	foreach(i, SelectedChao)
+	{
+		if (SelectedChao[i].id != ChaoLeashMode_Disabled)
+		{
 			return true;
 		}
 	}
 
-	if (CurrentLevel >= LevelIDs_SSGarden) {
+	if (CurrentLevel >= LevelIDs_SSGarden)
+	{
 		return true;
 	}
 
@@ -202,7 +218,8 @@ bool IsLevelChaoGarden_r() {
 }
 
 extern "C" {
-	__declspec(dllexport) void __cdecl Init(const char *path) {
+	__declspec(dllexport) void __cdecl Init(const char *path)
+	{
 		const IniFile *config = new IniFile(std::string(path) + "\\config.ini");
 		ChaoPowerups = config->getBool("Functionalities", "EnablePowerups", false);
 		ChaoAssist = config->getBool("Functionalities", "EnableChaoAssist", true);
@@ -216,7 +233,7 @@ extern "C" {
 		WriteCall((void*)0x442570, IsLevelChaoGarden_r);
 		WriteCall((void*)0x442680, IsLevelChaoGarden_r);
 		
-#ifndef NDEBUG
+#ifndef NDEBdUG
 		SelectedChao[0].id = 0;
 		SelectedChao[0].mode = ChaoLeashMode_Fly;
 		SelectedChao[1].id = 12;

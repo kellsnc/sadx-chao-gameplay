@@ -4,19 +4,22 @@
 NJS_TEXNAME CHAOHUD_TEXNAME[6];
 NJS_TEXLIST CHAOHUD_TEXLIST = { arrayptrandlength(CHAOHUD_TEXNAME) };
 
-void CalculateScreenPos(NJS_QUAD_TEXTURE* quad, float p1, float p2, float s1, float s2) {
+void CalculateScreenPos(NJS_QUAD_TEXTURE* quad, float p1, float p2, float s1, float s2)
+{
 	quad->x1 = HorizontalStretch * p1;
 	quad->x2 = quad->x1 + HorizontalStretch * s1;
 	quad->y1 = VerticalStretch * p2;
 	quad->y2 = quad->y1 + VerticalStretch * s2;
 }
 
-void ChaoHud_DrawSprite(int player, int chao, float alpha) {
+void ChaoHud_DrawSprite(int player, int chao, float alpha)
+{
 	NJS_QUAD_TEXTURE Sprite = { 0, 0, 0, 0, 0, 0, 1, 1 };
 
 	CalculateScreenPos(&Sprite, 11, 140 + (player * 45), 40, 40);
 
-	if (!MissedFrames) {
+	if (!MissedFrames)
+	{
 		njSetTexture(&CHAOHUD_TEXLIST);
 		SetDefaultAlphaBlend();
 		Direct3D_SetZFunc(7u);
@@ -31,7 +34,8 @@ void ChaoHud_DrawSprite(int player, int chao, float alpha) {
 		SetHudColorAndTextureNum(2 + player, color);
 		DrawRectPoints((NJS_POINT2*)&Sprite, 1);
 		
-		if (chao == -1) {
+		if (chao == -1)
+		{
 			CalculateScreenPos(&Sprite, 11, 140 + (player * 45), 40, 40);
 			SetHudColorAndTextureNum(1, color);
 			DrawRectPoints((NJS_POINT2*)&Sprite, 1);
@@ -39,29 +43,35 @@ void ChaoHud_DrawSprite(int player, int chao, float alpha) {
 	}
 }
 
-void ChaoHud_Delete(ObjectMaster* obj) {
+void ChaoHud_Delete(ObjectMaster* obj)
+{
 	njReleaseTexture(&CHAOHUD_TEXLIST);
 }
 
-void ChaoHud_Main(ObjectMaster* obj) {
+void ChaoHud_Main(ObjectMaster* obj)
+{
 	EntityData1* data = obj->Data1;
 
-	if (!data->Action) {
+	if (!data->Action)
+	{
 		LoadPVM("chaohud", &CHAOHUD_TEXLIST);
 		obj->DeleteSub = ChaoHud_Delete;
 		data->Action = 1;
 		data->CharID = 0xFF;
 	}
 
-	if (++data->InvulnerableTime > 60) {
+	if (++data->InvulnerableTime > 60)
+	{
 		data->CharID -= 2;
-		if (data->CharID == 1) {
+		if (data->CharID == 1)
+		{
 			DeleteObject_(obj);
 			return;
 		}
 	}
 
-	for (char p = 0; p < MaxPlayers; ++p) {
+	for (char p = 0; p < MaxPlayers; ++p)
+	{
 		ChaoHud_DrawSprite(p, SelectedChao[p].mode != ChaoLeashMode_Disabled ? SelectedChao[p].id : -1, data->CharID);
 	}
 }
