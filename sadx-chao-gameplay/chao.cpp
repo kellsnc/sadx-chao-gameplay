@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "mod.h"
 
+static ChaoData1* currentChaoData = nullptr;
+
 enum CustomChaoActs {
 	ChaoAct_FollowPlayer,
 	ChaoAct_IdlePlayer,
@@ -222,6 +224,8 @@ void __cdecl Chao_Main_r(ObjectMaster* obj)
 	ChaoData1* data1 = (ChaoData1*)obj->Data1;
 	ChaoData2* data2 = (ChaoData2*)obj->Data2;
 
+	currentChaoData = data1;
+
 	if (IsLevelChaoGarden() == false)
 	{
 		EntityData1* player = EntityData1Ptrs[data1->entity.CharIndex];
@@ -305,4 +309,35 @@ bool OhNoImDead2_r(EntityData1* a1, ObjectData2* a2)
 	}
 
 	TARGET_STATIC(OhNoImDead2)(a1, a2);
+}
+
+// Replace waypoint system
+BOOL __cdecl GetWaypointPos_r(int num, NJS_VECTOR* pos);
+Trampoline GetWaypointPos_t(0x00719EA0, 0x00719EA6, GetWaypointPos_r);
+BOOL __cdecl GetWaypointPos_r(int num, NJS_VECTOR* pos)
+{
+	if (IsLevelChaoGarden() == true)
+	{
+		return TARGET_STATIC(GetWaypointPos)(num, pos);
+	}
+	else
+	{
+		if (currentChaoData == nullptr)
+		{
+			return FALSE;
+		}
+
+		auto ptwp = EntityData1Ptrs[currentChaoData->entity.CharIndex];
+
+		if (ptwp == nullptr)
+		{
+			return FALSE;
+		}
+
+		pos->x = ptwp->Position.x + njCos(rand() % 0x10000) * (float)(rand() % 100);
+		pos->y = ptwp->Position.y; // unused but just in case
+		pos->z = ptwp->Position.z + njSin(rand() % 0x10000) * (float)(rand() % 100);
+
+		return TRUE;
+	}
 }
