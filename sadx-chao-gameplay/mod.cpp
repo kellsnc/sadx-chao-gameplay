@@ -23,13 +23,16 @@ CollisionData ChaoLevelCol[] = {
 	{ 0, 0, 0x77, 0, 0, { 0.0, 1.5, 0.0 }, { 3.0, 0.0, 0.0 }, 0, { 0 } }
 };
 
-void ResetSelectedChao() {
-	foreach(i, SelectedChao) {
+void ResetSelectedChao()
+{
+	foreach(i, SelectedChao)
+	{
 		SelectedChao[i].mode = ChaoLeashMode_Disabled;
 	}
 }
 
-void LoadChaoFiles() {
+void LoadChaoFiles()
+{
 	LoadChaoTexlist("AL_DX_PARTS_TEX", (NJS_TEXLIST*)0x33A1340, 0);
 	LoadChaoTexlist("AL_BODY", ChaoTexLists, 0);
 	LoadChaoTexlist("AL_jewel", &ChaoTexLists[4], 0);
@@ -48,11 +51,14 @@ void LoadChaoFiles() {
 	ChaoManager_Load();
 }
 
-void SetChaoPowerups(int id, ChaoData* chaodata) {
-	if (ChaoPowerups == true) {
+void SetChaoPowerups(int id, ChaoData* chaodata)
+{
+	if (ChaoPowerups == true)
+	{
 		CharObj2* co2 = CharObj2Ptrs[id];
 
-		if (co2) {
+		if (co2)
+		{
 			co2->PhysicsData.GroundAccel += static_cast<float>(min(99, chaodata->data.RunLevel)) / 90.0f;
 			co2->PhysicsData.JumpSpeed += static_cast<float>(min(99, chaodata->data.FlyLevel)) / 99.0f;
 			co2->PhysicsData.HSpeedCap += static_cast<float>(min(99, chaodata->data.StaminaLevel)) / 30.0f;
@@ -61,19 +67,24 @@ void SetChaoPowerups(int id, ChaoData* chaodata) {
 	}
 }
 
-ChaoData* GetChaoData(int id) {
+ChaoData* GetChaoData(int id)
+{
 	return (ChaoData*)(GetChaoSaveAddress() + 2072 + (2048 * id));
 }
 
-int GetHeldChao(int player) {
+int GetHeldChao(int player)
+{
 	EntityData1* data = EntityData1Ptrs[player];
 	CharObj2* co2 = CharObj2Ptrs[player];
 
-	if (co2 && co2->ObjectHeld && co2->ObjectHeld->Data1) {
+	if (co2 && co2->ObjectHeld && co2->ObjectHeld->Data1)
+	{
 		ChaoData1* chaodata = (ChaoData1*)co2->ObjectHeld->Data1;
 
-		for (uint8_t i = 0; i < 24; ++i) {
-			if (chaodata->ChaoDataBase_ptr == &GetChaoData(i)->data && chaodata->ChaoDataBase_ptr->Type != ChaoType_Egg) {
+		for (uint8_t i = 0; i < 24; ++i)
+		{
+			if (chaodata->ChaoDataBase_ptr == &GetChaoData(i)->data && chaodata->ChaoDataBase_ptr->Type != ChaoType_Egg)
+			{
 				return i;
 			}
 		}
@@ -82,14 +93,17 @@ int GetHeldChao(int player) {
 	return -1;
 }
 
-void __cdecl CreateChao_Delayed(ObjectMaster* obj) {
+void __cdecl CreateChao_Delayed(ObjectMaster* obj)
+{
 	DelayedChaoWK* wk = (DelayedChaoWK*)obj->UnknownB_ptr;
 
-	if (wk->timer > 1) {
+	if (wk->timer > 1)
+	{
 		EntityData1* player = EntityData1Ptrs[wk->player];
 		NJS_VECTOR pos = { 0, 0, 0 };
 
-		if (player && SelectedChao[wk->player].mode == ChaoLeashMode_Free) {
+		if (player && SelectedChao[wk->player].mode == ChaoLeashMode_Free)
+		{
 			PutPlayerBehind(&pos, player, 5.0f);
 		}
 		
@@ -98,23 +112,28 @@ void __cdecl CreateChao_Delayed(ObjectMaster* obj) {
 		chao->Data1->CharIndex = wk->player;
 		SetChaoPowerups(wk->player, chaodata);
 
-		if (SelectedChao[wk->player].mode == ChaoLeashMode_Held) {
-			if (player && !(player->Status & Status_HoldObject)) {
+		if (SelectedChao[wk->player].mode == ChaoLeashMode_Held)
+		{
+			if (player && !(player->Status & Status_HoldObject))
+			{
 				SetHeldObject(wk->player, chao);
 			}
 		}
-		else if (SelectedChao[wk->player].mode == ChaoLeashMode_Fly) {
+		else if (SelectedChao[wk->player].mode == ChaoLeashMode_Fly)
+		{
 			chao->Data1->Status |= StatusChao_FlyPlayer;
 		}
 
 		DeleteObject_(obj);
 	}
-	else {
+	else
+	{
 		wk->timer++;
 	}
 }
 
-void LoadLevelChao(int id, int player) {
+void LoadLevelChao(int id, int player)
+{
 	DelayedChaoWK* wk = (DelayedChaoWK*)LoadObject(LoadObj_UnknownB, 0, CreateChao_Delayed)->UnknownB_ptr;
 	wk->id = id;
 	wk->player = player;
@@ -122,13 +141,17 @@ void LoadLevelChao(int id, int player) {
 
 void __cdecl LoadLevel_r(ObjectMaster* obj);
 Trampoline LoadLevel_t((int)LoadLevel, (int)LoadLevel + 0x7, LoadLevel_r);
-void __cdecl LoadLevel_r(ObjectMaster* obj) {
+void __cdecl LoadLevel_r(ObjectMaster* obj)
+{
 	TARGET_STATIC(LoadLevel)(obj);
 
 	// Load all chao
-	if (IsLevelChaoGarden() == false) {
-		foreach(selection, SelectedChao) {
-			if (SelectedChao[selection].mode != ChaoLeashMode_Disabled) {
+	if (IsLevelChaoGarden() == false)
+	{
+		foreach(selection, SelectedChao)
+		{
+			if (SelectedChao[selection].mode != ChaoLeashMode_Disabled)
+			{
 				LoadLevelChao(SelectedChao[selection].id, selection);
 			}
 		}
@@ -233,7 +256,7 @@ extern "C" {
 		WriteCall((void*)0x442570, IsLevelChaoGarden_r);
 		WriteCall((void*)0x442680, IsLevelChaoGarden_r);
 		
-#ifndef NDEBdUG
+#ifndef NDEBUG
 		SelectedChao[0].id = 0;
 		SelectedChao[0].mode = ChaoLeashMode_Fly;
 		SelectedChao[1].id = 12;

@@ -120,7 +120,8 @@ void ChaoAttack(ObjectMaster* obj, ChaoData1* data1)
 		{
 			data1->entity.Status &= ~(StatusChao_Attacked);
 		}
-		else {
+		else
+		{
 			data1->entity.NextAction = ChaoAct_FollowPlayer;
 			data1->entity.Status &= ~(StatusChao_Attacked);
 			return;
@@ -137,11 +138,13 @@ void ChaoAttack(ObjectMaster* obj, ChaoData1* data1)
 		{
 			data1->entity.CollisionInfo->CollisionArray[2].field_3 = 0xE2;
 		}
-		else {
+		else
+		{
 			data1->entity.CollisionInfo->CollisionArray[2].field_3 = 0;
 		}
 	}
-	else {
+	else
+	{
 		data1->entity.NextAction = ChaoAct_FollowPlayer;
 		data1->entity.Status &= ~(StatusChao_Attacked);
 	}

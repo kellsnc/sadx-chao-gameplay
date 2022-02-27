@@ -4,7 +4,7 @@
 bool IsChaoInWater(ChaoData1* chaodata1, ChaoData2_* chaodata2)
 {
 	Mysterious64Bytes colthing;
-	colthing.Position = { chaodata1->entity.Position.x, chaodata1->entity.Position.y - 2.0f, chaodata1->entity.Position.z };
+	colthing.Position = { chaodata1->entity.Position.x, chaodata1->entity.Position.y, chaodata1->entity.Position.z };
 
 	// Get all collisions within a radius
 	GetActiveCollisions(colthing.Position.x, colthing.Position.y, colthing.Position.z, 200.0f);
@@ -42,9 +42,9 @@ bool IsChaoInWater(ChaoData1* chaodata1, ChaoData2_* chaodata2)
 	return false;
 }
 
-signed int __cdecl Chao_DetectWater_r(ObjectMaster* obj);
+BOOL __cdecl Chao_DetectWater_r(ObjectMaster* obj);
 Trampoline Chao_DetectWater_t(0x73C200, 0x73C207, Chao_DetectWater_r);
-signed int __cdecl Chao_DetectWater_r(ObjectMaster* obj)
+BOOL __cdecl Chao_DetectWater_r(ObjectMaster* obj)
 {
 	if (IsLevelChaoGarden() == true)
 	{
@@ -60,7 +60,8 @@ signed int __cdecl Chao_DetectWater_r(ObjectMaster* obj)
 	{
 		state &= ~ChaoState_Unk1;
 	}
-	else {
+	else
+	{
 		if (IsChaoInWater(data1, data2))
 		{
 			if (!(state & ChaoState_Unk1))
@@ -75,7 +76,7 @@ signed int __cdecl Chao_DetectWater_r(ObjectMaster* obj)
 			}
 
 			state |= ChaoState_Water;
-			return true;
+			return TRUE;
 		}
 		else
 		{
@@ -83,5 +84,5 @@ signed int __cdecl Chao_DetectWater_r(ObjectMaster* obj)
 		}
 	}
 
-	return false;
+	return FALSE;
 }
