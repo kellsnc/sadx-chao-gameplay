@@ -4,7 +4,7 @@
 bool IsChaoInWater(ChaoData1* chaodata1, ChaoData2_* chaodata2)
 {
 	Mysterious64Bytes colthing;
-	colthing.Position = { chaodata1->entity.Position.x, chaodata1->entity.Position.y, chaodata1->entity.Position.z };
+	colthing.Position = { chaodata1->entity.Position.x, chaodata1->entity.Position.y - 1.0f, chaodata1->entity.Position.z };
 
 	// Get all collisions within a radius
 	GetActiveCollisions(colthing.Position.x, colthing.Position.y, colthing.Position.z, 200.0f);
