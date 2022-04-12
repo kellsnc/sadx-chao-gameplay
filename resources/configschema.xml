@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<ConfigSchema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://www.sonicretro.org">
+  <Groups>
+    <Group name="Functionalities">
+      <Property name="EnablePowerups" type="bool" defaultvalue="False" display="Enable Powerups">
+        <HelpText>The Chao will share its power with you.</HelpText>
+      </Property>
+      <Property name="EnableChaoAssist" type="bool" defaultvalue="True" display="Enable Chao Assist">
+        <HelpText>The Chao will attack surrounding enemies if in flight mode.</HelpText>
+      </Property>
+      <Property name="EnableChaoLuck" type="bool" defaultvalue="True" display="Enable Chao Luck">
+        <HelpText>The Chao may get more animals after destroying an enemy.</HelpText>
+      </Property>
+      <Property name="EnableHUD" type="bool" defaultvalue="True" display="Enable HUD">
+        <HelpText>Tells you when Chao are added or removed from players.</HelpText>
+      </Property>
+    </Group>
+  </Groups>
+</ConfigSchema>
